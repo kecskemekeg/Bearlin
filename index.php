@@ -5,36 +5,62 @@ session_start();
 if (isset($_SESSION['user_id'])) {
     // User is logged in
     $user_id = $_SESSION['user_id'];
-    echo "Welcome, User $user_id!";
 } else {
     // User is not logged in, redirect to login page
     header("Location: login.php");
     exit();
 }
 
-// Handle joining a lobby if an invitation code is provided
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['joinCode'])) {
-    $joinCode = strtoupper($_POST['joinCode']); // Convert to uppercase for consistency
-    try{
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
+    switch ($_POST['action']) {
+        case 'resumeGame':
+            $game_id = getGameid($user_id);
+            if(isGameidValid($game_id)){
+                header("Location: lobby.php?code=$game_id");
+                exit();
+            }else{
+                echo "No ongoing games";
+            }
+            break;
+        case 'joinGame':
+            if(isset($_POST['joinCode'])){
+                $joinCode = strtoupper($_POST['joinCode']);
+                if(strlen($joinCode)==6){
+                    if(isGameidValid($joinCode)){
+                        if(getGameid($user_id) == $joinCode){
+                            echo "You are already part of this game, please press resume game to rejoin";
+                        }else{
 
-        global $pdo;
-        global $user_id;
-        $insertQuery = "REPLACE INTO games (player,game_id,leader, is_started) VALUES (:user_id,:game_id,0,0)";
-                $insertStmt = $pdo->prepare($insertQuery);
-                $insertStmt->bindParam(':game_id', $joinCode, PDO::PARAM_STR);
-                $insertStmt->bindParam(':user_id', $user_id, PDO::PARAM_STR);
-                $insertStmt->execute();
-    }catch (PDOException $e){
-        die("Connection failed: " . $e->getMessage());
+                            try{
+                                $insertQuery = "REPLACE INTO games (player,game_id,leader, is_started) VALUES (:user_id,:game_id,0,0)";
+                                    $insertStmt = $pdo->prepare($insertQuery);
+                                    $insertStmt->bindParam(':game_id', $joinCode, PDO::PARAM_STR);
+                                    $insertStmt->bindParam(':user_id', $user_id, PDO::PARAM_STR);
+                                    $insertStmt->execute();
+                            }catch (PDOException $e){
+                                die("Connection failed: " . $e->getMessage());
+                            }
+                            // Redirect to the lobby page with the invitation code
+                            header("Location: lobby.php?code=$joinCode");
+                            exit();
+                        }
+                    }else{
+                        echo "There are no games with this code";
+                    }
+                }else{
+                    echo "Join code must be 6 characters";
+                }
+            }else{
+                echo "No join code provided";
+            }
+            break;
+        default:
+            # code...
+            break;
     }
-    // Redirect to the lobby page with the invitation code
-    header("Location: lobby.php?code=$joinCode");
-    exit();
 }
 
 if (isset($_POST['action']) && $_POST['action'] === 'make_leader'){
-    global $pdo;
-    global $user_id;
     $game_id = $_POST['game_id'];
     $insertQuery = "REPLACE INTO games (player,game_id, leader,is_started ) VALUES (:user_id,:game_id,1,0)";
             $insertStmt = $pdo->prepare($insertQuery);
@@ -43,6 +69,37 @@ if (isset($_POST['action']) && $_POST['action'] === 'make_leader'){
             $insertStmt->execute();
 
 }
+
+function getGameid($user_id){
+    global $pdo;
+    try{
+
+        $query = "SELECT game_id FROM games WHERE player=:user_id";
+        $stmt = $pdo->prepare($query);
+        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_STR);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC)[0]['game_id'];
+    }catch (PDOException $e) {
+        die("Connection failed: " . $e->getMessage());
+    }
+
+}
+
+function isGameidValid($game_id){
+    global $pdo;
+    try{
+
+        $query = "SELECT * FROM games WHERE game_id=:game_id AND leader=1";
+        $stmt = $pdo->prepare($query);
+        $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
+        $stmt->execute();
+        $res = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return (sizeof($res)==1);
+    }catch (PDOException $e) {
+        die("Connection failed: " . $e->getMessage());
+    }
+}
+
 ?>
 
     <!DOCTYPE html>
@@ -56,16 +113,21 @@ if (isset($_POST['action']) && $_POST['action'] === 'make_leader'){
     </head>
 
     <body>
-        <h2>Welcome to the Game!</h2>
+        <h2>Welcome to the game <?php echo $user_id?>!</h2>
 
         <!-- Button to create a game -->
         <button onclick="createGame()">Create Game</button>
+        <!-- Button to resume a game -->
+        
+        <form method="post" action="">
+            <button type="submit" name="action" value="resumeGame">Resume Game</button>
+        </form>
         <!-- Join Game Form -->
         <h3>Join a Game</h3>
         <form method="post" action="">
             <label for="joinCode">Enter Invitation Code:</label>
             <input type="text" name="joinCode" required>
-            <button type="submit">Join Game</button>
+            <button type="submit" name="action" value="joinGame">Join Game</button>
         </form>
 
         <script>
@@ -74,6 +136,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'make_leader'){
                 $.post('index.php', {action:'make_leader', game_id: invitecode});
                 // Redirect to the lobby page with a generated invite code
                 window.location.href = 'lobby.php?code=' + invitecode;
+            }
+
+            function resumeGame(){
+                $.post('index.php', {action:'resumeGame'});
             }
 
             function generateInviteCode() {

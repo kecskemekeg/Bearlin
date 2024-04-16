@@ -43,6 +43,180 @@ function getRole($user_id, $invite_code){
 
 }
 
+function getPlayersInGame($inviteCode) {
+    global $pdo;
+
+    try {
+
+        // Retrieve players in the lobby
+        $query = "SELECT player, player_role FROM games WHERE game_id = :inviteCode";
+        $stmt = $pdo->prepare($query);
+        $stmt->bindParam(':inviteCode', $inviteCode, PDO::PARAM_STR);
+        $stmt->execute();
+
+        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $players = array();
+        $roles = array();
+        foreach ($data as $d){
+            array_push($players,$d['player']);
+            array_push($roles,$d['player_role']);
+        } 
+        return array_combine($players,$roles);
+
+    } catch (PDOException $e) {
+        die("Connection failed: " . $e->getMessage());
+    }
+}
+
+function getSpecialRoles($players){
+    $result = array();
+    foreach ($players as $player => $role) {
+        if($role != "Knight" && $role !="Minion"){
+            array_push($result, $role);
+        }
+    }
+    return $result;
+}
+
+function getPlayersPOV($user_id, $invite_code){
+    $players = getPlayersInGame($invite_code);
+    $tmp_players = array();
+    $tmp_roles = array();
+    $special_roles = getSpecialRoles($players);
+    if($players[$user_id]=="Knight"){
+        foreach ($players as $player => $role) {
+            array_push($tmp_players, $player);
+            if($player == $user_id){
+                array_push($tmp_roles, $role);
+            }else{
+
+                array_push($tmp_roles, "?");
+            }
+        }
+        $result = array_combine($tmp_players, $tmp_roles);
+        return $result;
+    }
+    if($players[$user_id]=="Oberon"){
+        foreach ($players as $player => $role) {
+            array_push($tmp_players, $player);
+            if($player == $user_id){
+                array_push($tmp_roles, $role);
+            }else{
+
+                array_push($tmp_roles, "?");
+            }
+        }
+        $result = array_combine($tmp_players, $tmp_roles);
+        return $result;
+    }
+    if($players[$user_id]=="Minion"){
+        foreach ($players as $player => $role) {
+            array_push($tmp_players, $player);
+            if($player == $user_id){
+                array_push($tmp_roles, $role);
+            }else if($role == "Assassin" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
+                array_push($tmp_roles, "Evil");
+            }else if(in_array("Oberon", $special_roles)){
+
+                array_push($tmp_roles, "?");
+            }else{
+                array_push($tmp_roles, "Good");
+            }
+        }
+        $result = array_combine($tmp_players, $tmp_roles);
+        return $result;
+    }
+    if($players[$user_id]=="Assassin"){
+        foreach ($players as $player => $role) {
+            array_push($tmp_players, $player);
+            if($player == $user_id){
+                array_push($tmp_roles, $role);
+            }else if($role == "Assassin" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
+                array_push($tmp_roles, "Evil");
+            }else if(in_array("Oberon", $special_roles)){
+
+                array_push($tmp_roles, "?");
+            }else{
+                array_push($tmp_roles, "Good");
+            }
+        }
+        $result = array_combine($tmp_players, $tmp_roles);
+        return $result;
+    }
+    if($players[$user_id]=="Mordred"){
+        foreach ($players as $player => $role) {
+            array_push($tmp_players, $player);
+            if($player == $user_id){
+                array_push($tmp_roles, $role);
+            }else if($role == "Assassin" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
+                array_push($tmp_roles, "Evil");
+            }else if(in_array("Oberon", $special_roles)){
+
+                array_push($tmp_roles, "?");
+            }else{
+                array_push($tmp_roles, "Good");
+            }
+        }
+        $result = array_combine($tmp_players, $tmp_roles);
+        return $result;
+    }
+    if($players[$user_id]=="Morgana"){
+        foreach ($players as $player => $role) {
+            array_push($tmp_players, $player);
+            if($player == $user_id){
+                array_push($tmp_roles, $role);
+            }else if($role == "Assassin" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
+                array_push($tmp_roles, "Evil");
+            }else if(in_array("Oberon", $special_roles)){
+
+                array_push($tmp_roles, "?");
+            }else{
+                array_push($tmp_roles, "Good");
+            }
+        }
+        $result = array_combine($tmp_players, $tmp_roles);
+        return $result;
+    }
+    if($players[$user_id]=="Percival"){
+        foreach ($players as $player => $role) {
+            array_push($tmp_players, $player);
+            if($player == $user_id){
+                array_push($tmp_roles, $role);
+            }else if($role == "Merlin"){
+                if(in_array("Morgana", $special_roles)){
+                    array_push($tmp_roles, "Merlin/Morgana");
+                }else{
+
+                    array_push($tmp_roles, $role);
+                }
+            }else if($role == "Morgana"){
+                array_push($tmp_roles, "Merlin/Morgana");
+            }else{
+                array_push($tmp_roles, "?");
+            }
+        }
+        $result = array_combine($tmp_players, $tmp_roles);
+        return $result;
+    }
+    if($players[$user_id]=="Merlin"){
+        foreach ($players as $player => $role) {
+            array_push($tmp_players, $player);
+            if($player == $user_id){
+                array_push($tmp_roles, $role);
+            }else if($role == "Assassin" || $role == "Minion" || $role == "Oberon" || $role == "Morgana"){
+                array_push($tmp_roles, "Evil");
+            }else if(in_array("Mordred", $special_roles)){
+
+                array_push($tmp_roles, "?");
+            }else{
+                array_push($tmp_roles, "Good");
+            }
+        }
+        $result = array_combine($tmp_players, $tmp_roles);
+        return $result;
+    }
+}
+
 function isGameStarted($game_id, $player){
     global $pdo;
     try {
@@ -61,7 +235,7 @@ function isGameStarted($game_id, $player){
         die("Connection failed: " . $e->getMessage());
     }
 }
-
+$players_and_roles = getPlayersPOV($user_id, $invite_code);
 
 
 ?>
@@ -77,5 +251,30 @@ function isGameStarted($game_id, $player){
 <body>
 <h3>Logged in as: <?php echo $user_id?></h3>
 <h3>Your role is <?php echo getRole($user_id,$invite_code)?></h3>
+<!-- Players List -->
+<?php print_r(getPlayersPOV("test",$invite_code))?>
+<br>
+<?php print_r(getPlayersPOV("test2",$invite_code))?>
+<br>
+<?php print_r(getPlayersPOV("test3",$invite_code))?>
+<br>
+<?php print_r(getPlayersPOV("test4",$invite_code))?>
+<br>
+<?php print_r(getPlayersPOV("test5",$invite_code))?>
+<br>
+<?php print_r(getPlayersPOV("test6",$invite_code))?>
+<br>
+<?php print_r(getPlayersPOV("test7",$invite_code))?>
+<br>
+<?php print_r(getPlayersPOV("test8",$invite_code))?>
+<br>
+<?php print_r(getPlayersPOV("test9",$invite_code))?>
+<br>
+<h3>Players in the Game</h3>
+    <ul id="playersList">
+        <?php foreach ($players_and_roles as $player => $role) : ?>
+            <li><?php echo $player . " : " . $role; ?></li>
+        <?php endforeach; ?>
+    </ul>
 </body>
 </html>
