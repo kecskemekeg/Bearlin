@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
                         }else{
 
                             try{
-                                $insertQuery = "REPLACE INTO games (player,game_id,leader, is_started) VALUES (:user_id,:game_id,0,0)";
+                                $insertQuery = "REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES (:user_id,:game_id,0,0,0)";
                                     $insertStmt = $pdo->prepare($insertQuery);
                                     $insertStmt->bindParam(':game_id', $joinCode, PDO::PARAM_STR);
                                     $insertStmt->bindParam(':user_id', $user_id, PDO::PARAM_STR);
@@ -60,13 +60,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
     }
 }
 
-if (isset($_POST['action']) && $_POST['action'] === 'make_leader'){
+if (isset($_POST['action']) && $_POST['action'] === 'create_game'){
     $game_id = $_POST['game_id'];
-    $insertQuery = "REPLACE INTO games (player,game_id, leader,is_started ) VALUES (:user_id,:game_id,1,0)";
+    $insertQuery = "REPLACE INTO players (player,game_id, leader,is_started,is_in_party ) VALUES (:user_id,:game_id,1,0,0)";
             $insertStmt = $pdo->prepare($insertQuery);
             $insertStmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
             $insertStmt->bindParam(':user_id', $user_id, PDO::PARAM_STR);
             $insertStmt->execute();
+    
 
 }
 
@@ -74,7 +75,7 @@ function getGameid($user_id){
     global $pdo;
     try{
 
-        $query = "SELECT game_id FROM games WHERE player=:user_id";
+        $query = "SELECT game_id FROM players WHERE player=:user_id";
         $stmt = $pdo->prepare($query);
         $stmt->bindParam(':user_id', $user_id, PDO::PARAM_STR);
         $stmt->execute();
@@ -89,7 +90,7 @@ function isGameidValid($game_id){
     global $pdo;
     try{
 
-        $query = "SELECT * FROM games WHERE game_id=:game_id AND leader=1";
+        $query = "SELECT * FROM players WHERE game_id=:game_id AND leader=1";
         $stmt = $pdo->prepare($query);
         $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
         $stmt->execute();
@@ -133,7 +134,7 @@ function isGameidValid($game_id){
         <script>
             function createGame() {
                 invitecode = generateInviteCode();
-                $.post('index.php', {action:'make_leader', game_id: invitecode});
+                $.post('index.php', {action:'create_game', game_id: invitecode});
                 // Redirect to the lobby page with a generated invite code
                 window.location.href = 'lobby.php?code=' + invitecode;
             }

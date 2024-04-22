@@ -29,68 +29,83 @@ if (isset($_GET['code'])) {
     exit();
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
+    switch ($_POST['action']) {
+        case 'start_game':
+            $leader = getLeader();
+    
+            if($user_id == $leader){
+                
+                $roles = $_POST['roles'];
+                startGame($roles, $inviteCode);
+            }else{
+                echo "You are not the leader!";
+            }
+            
+            break;
+        
+        default:
+            # code...
+            break;
+    }
+}
+
 function getLeader(){
     global $pdo;
-    $query = "SELECT player FROM games WHERE game_id = :inviteCode AND leader = 1";
+    $query = "SELECT player FROM players WHERE game_id = :inviteCode AND leader = 1";
     $stmt = $pdo->prepare($query);
     $stmt->bindParam(':inviteCode', $_SESSION['invite_code'], PDO::PARAM_STR);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC)[0]['player'];
 }
 
-if (isset($_POST['action']) && $_POST['action'] === 'start_game'){
-    $leader = getLeader();
-    
-    if($user_id == $leader){
-        
-        $roles = $_POST['roles'];
-        startGame($roles, $inviteCode);
-    }else{
-        echo "You are not the leader!";
-    }
-    exit();
-}
-
 function startGame($roles, $inviteCode){
     $players = getPlayersInLobby($inviteCode);
-    if(sizeof($players)<5){
+    $player_size = sizeof($players);
+    if($player_size<5){
         echo "Minimum 5 player is required!";
-        return;
-    }
-    if(sizeof($players)>10){
+    }else
+    if($player_size>10){
         echo "Maximum 10 players can play!";
-        return;
-    }
-    shuffle($players);
-    shuffle($roles);
-    global $pdo;
-    $content = array_combine($players, $roles);
-    $first = true;
-    try{
+    }else{
 
-        foreach ($content as $player => $role){
-            if($first){
-                $insertQuery = "UPDATE games SET king=1, player_role=:player_role, is_started=1 WHERE game_id = :inviteCode AND player = :player";
-                $insertStmt = $pdo->prepare($insertQuery);
-                $insertStmt->bindParam(':inviteCode', $inviteCode, PDO::PARAM_STR);
-                $insertStmt->bindParam(':player', $player, PDO::PARAM_STR);
-                $insertStmt->bindParam(':player_role', $role, PDO::PARAM_STR);
-                $insertStmt->execute();
-                $first = false;
-            }else{
-
-                $insertQuery = "UPDATE games SET king=0, player_role=:player_role, is_started=1  WHERE game_id = :inviteCode AND player = :player";
+        shuffle($players);
+        shuffle($roles);
+        global $pdo;
+        $content = array_combine($players, $roles);
+        $first = true;
+        try{
+    
+            foreach ($content as $player => $role){
+                if($first){
+                    $insertQuery = "UPDATE players SET king=1, player_role=:player_role, is_started=1 WHERE game_id = :inviteCode AND player = :player";
                     $insertStmt = $pdo->prepare($insertQuery);
                     $insertStmt->bindParam(':inviteCode', $inviteCode, PDO::PARAM_STR);
                     $insertStmt->bindParam(':player', $player, PDO::PARAM_STR);
                     $insertStmt->bindParam(':player_role', $role, PDO::PARAM_STR);
                     $insertStmt->execute();
+                    $first = false;
+                }else{
+    
+                    $insertQuery = "UPDATE players SET king=0, player_role=:player_role, is_started=1  WHERE game_id = :inviteCode AND player = :player";
+                        $insertStmt = $pdo->prepare($insertQuery);
+                        $insertStmt->bindParam(':inviteCode', $inviteCode, PDO::PARAM_STR);
+                        $insertStmt->bindParam(':player', $player, PDO::PARAM_STR);
+                        $insertStmt->bindParam(':player_role', $role, PDO::PARAM_STR);
+                        $insertStmt->execute();
+                }
             }
+            $insertQuery = "REPLACE INTO games (game_id, player_size, gamestate) VALUES (:game_id, :player_size, 'selection')";
+                $insertStmt = $pdo->prepare($insertQuery);
+                $insertStmt->bindParam(':game_id', $inviteCode, PDO::PARAM_STR);
+                $insertStmt->bindParam(':player_size', $player_size, PDO::PARAM_STR);
+                $insertStmt->execute();
+        }catch (PDOException $e){
+            die("Connection failed: " . $e->getMessage());
         }
-    }catch (PDOException $e){
-        die("Connection failed: " . $e->getMessage());
+        header("Location: game.php");
+        exit();
     }
-    echo "game started";
 }
 
 
@@ -102,7 +117,7 @@ function getPlayersInLobby($inviteCode) {
     try {
 
         // Retrieve players in the lobby
-        $query = "SELECT player FROM games WHERE game_id = :inviteCode";
+        $query = "SELECT player FROM players WHERE game_id = :inviteCode";
         $stmt = $pdo->prepare($query);
         $stmt->bindParam(':inviteCode', $inviteCode, PDO::PARAM_STR);
         $stmt->execute();
@@ -124,7 +139,7 @@ function isGameStarted($game_id, $player){
     try {
 
         // Retrieve players in the lobby
-        $query = "SELECT is_started FROM games WHERE game_id = :game_id AND player=:player";
+        $query = "SELECT is_started FROM players WHERE game_id = :game_id AND player=:player";
         $stmt = $pdo->prepare($query);
         $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
         $stmt->bindParam(':player', $player, PDO::PARAM_STR);
@@ -180,10 +195,9 @@ $playersInLobby = getPlayersInLobby($inviteCode);
         <input type="checkbox" name="specialChars[]" value="Morgana"> Morgana
         <!-- Add more checkboxes for additional characters -->
         <br><br>
-        <button onclick="startGame()">Start Game</button>
-        <div>
-            <text id="log"></text>
-        </div>
+        <form method="post" action="">
+        <button onclick="startGame()" type="submit" name="action" value="start_game">Start Game</button>
+        </form>
         
     
 
@@ -271,10 +285,7 @@ $playersInLobby = getPlayersInLobby($inviteCode);
         
         function startGame() {
             roles =getRoles();
-            $.post('lobby.php?code=<?php echo $inviteCode; ?>', {action:'start_game',roles:roles}, function(data){
-                console.log('Received messages:', data);
-                document.getElementById("log").textContent=data;
-            });
+            $.post('lobby.php?code=<?php echo $inviteCode; ?>', {action:'start_game',roles:roles});
         }
     </script>
 </body>
