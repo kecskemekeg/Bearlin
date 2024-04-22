@@ -137,6 +137,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
                 
             }
             break;
+        case 'assassin':
+            if (getGameState($invite_code) != "assassin" || getRole($user_id,$invite_code) != "Assassin"){
+                break;
+            }
+            $kill_target = $_POST['kill_target'];
+            if(getRole($kill_target, $invite_code)=="Merlin"){
+                setGameState($invite_code, "evil");
+            }else{
+                setGameState($invite_code,"good");
+            }
+            break;
         case 'test':
             debugVoteSuccess($invite_code);
             
@@ -973,6 +984,14 @@ $gamestate = getGameState($invite_code);
         <p>Will the mission succeed?</p>
         <button type="submit" name="action" value="success">Success</button>
         <button type="submit" name="action" value="fail" <?php if (getAlignment($user_id,$invite_code)=="good") echo 'hidden'; ?>>Fail</button>
+</form>
+<form id="assassin" method="post" action="" <?php if ($gamestate != "assassin" || getRole($user_id,$invite_code) != "Assassin") echo 'hidden'; ?>>
+        <p>Kill Merlin</p>
+        <?php foreach ($players as $player) {
+            echo '<input type="radio" name="kill_target" value='.$player.' >'.$player;
+        }?>
+        <button type="submit" name="action" value="assassin">Kill</button>
+        
 </form>
 <div id="good" <?php if ($gamestate != "good") echo 'hidden'; ?>>
     <p>Congratulations Arthur's knights defeated the minions!</p>
