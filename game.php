@@ -968,7 +968,7 @@ $gamestate = getGameState($invite_code);
 </table>
 <form id="select_party" method="post" action="" <?php if ($gamestate != "selection" || getKing($invite_code) != $user_id) echo 'hidden'; ?>>
         <?php foreach ($players as $player) {
-            echo '<input type="checkbox" name="select_party_cb[]" value='.$player.' >'.$player;
+            echo '<input type="checkbox" name="select_party_cb[]" value='.$player.' id='.$player.' >'.$player;
         }?>
         <button type="submit" name="action" value="select_team">Select team</button>
            
@@ -988,7 +988,7 @@ $gamestate = getGameState($invite_code);
 <form id="assassin" method="post" action="" <?php if ($gamestate != "assassin" || getRole($user_id,$invite_code) != "Assassin") echo 'hidden'; ?>>
         <p>Kill Merlin</p>
         <?php foreach ($players as $player) {
-            echo '<input type="radio" name="kill_target" value='.$player.' >'.$player;
+            echo '<input type="radio" name="kill_target" value='.$player.' id='.$player.'>'.$player;
         }?>
         <button type="submit" name="action" value="assassin">Kill</button>
         
@@ -999,8 +999,33 @@ $gamestate = getGameState($invite_code);
 <div id="evil" <?php if ($gamestate != "evil") echo 'hidden'; ?>>
     <p>The minions of Mordred became victorious!</p>
 </div>
-<form id="test" method="post" action="">
-<button type="submit" name="action" value="test">Test button</button>
+<form action="logout.php" method="post">
+     <button type="submit">Logout</button>
 </form>
+<!-- <form id="test" method="post" action="">
+<button type="submit" name="action" value="test">Test button</button>
+</form> -->
+<script>
+    //https://www.sitepoint.com/quick-tip-persist-checkbox-checked-state-after-page-reload/
+    var checkboxValues = JSON.parse(localStorage.getItem('checkboxValues')) || {};
+        var $checkboxes = $("#select_party :checkbox");
+
+        $checkboxes.on("change", function(){
+        $checkboxes.each(function(){
+            checkboxValues[this.id] = this.checked;
+        });
+        localStorage.setItem("checkboxValues", JSON.stringify(checkboxValues));
+        });
+        $.each(checkboxValues, function(key, value) {
+        $("#" + key).prop('checked', value);
+        });
+    
+    function refreshPage() {
+        setTimeout(function() {
+            window.location.href = window.location.href;
+        }, 5000); 
+    }
+    refreshPage();
+</script>
 </body>
 </html>

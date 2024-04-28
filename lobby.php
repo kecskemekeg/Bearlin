@@ -29,6 +29,12 @@ if (isset($_GET['code'])) {
     exit();
 }
 
+if(isset($_SESSION['specials'])){
+    $specials = $_SESSION['specials'];
+}else{
+    $specials = array("Assassin" => true, "Merlin" => true, "Percival" => false, "Oberon" =>false, "Morgana" => false, "Mordred" => false);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
     switch ($_POST['action']) {
         case 'start_game':
@@ -187,16 +193,22 @@ $playersInLobby = getPlayersInLobby($inviteCode);
         <label for="numPlayers">Number of Players (min 5 - max 10): <?php echo sizeof($playersInLobby); ?></label>
         <br>
         <label>Special Characters:</label>
-        <input type="checkbox" name="specialChars[]" value="Assassin" checked="true"> Assassin
-        <input type="checkbox" name="specialChars[]" value="Merlin" checked="true"> Merlin
-        <input type="checkbox" name="specialChars[]" value="Oberon"> Oberon
-        <input type="checkbox" name="specialChars[]" value="Percival"> Percival
-        <input type="checkbox" name="specialChars[]" value="Mordred"> Mordred
-        <input type="checkbox" name="specialChars[]" value="Morgana"> Morgana
+        <div id="checkbox-container">
+
+            <input id="option1" type="checkbox" name="specialChars[]" value="Assassin" checked="true"> Assassin
+            <input id="option2" type="checkbox" name="specialChars[]" value="Merlin" checked="true"> Merlin
+            <input id="option3" type="checkbox" name="specialChars[]" value="Oberon"> Oberon
+            <input id="option4" type="checkbox" name="specialChars[]" value="Percival"> Percival
+            <input id="option5" type="checkbox" name="specialChars[]" value="Mordred"> Mordred
+            <input id="option6" type="checkbox" name="specialChars[]" value="Morgana"> Morgana
+        </div>
         <!-- Add more checkboxes for additional characters -->
         <br><br>
         <form method="post" action="">
         <button onclick="startGame()" type="submit" name="action" value="start_game">Start Game</button>
+        </form>
+        <form action="logout.php" method="post">
+            <button type="submit">Logout</button>
         </form>
         
     
@@ -280,13 +292,32 @@ $playersInLobby = getPlayersInLobby($inviteCode);
             return char_roles;
 
         }
-        
+        //https://www.sitepoint.com/quick-tip-persist-checkbox-checked-state-after-page-reload/
+        var checkboxValues = JSON.parse(localStorage.getItem('checkboxValues')) || {};
+        var $checkboxes = $("#checkbox-container :checkbox");
+
+        $checkboxes.on("change", function(){
+        $checkboxes.each(function(){
+            checkboxValues[this.id] = this.checked;
+        });
+        localStorage.setItem("checkboxValues", JSON.stringify(checkboxValues));
+        });
+        $.each(checkboxValues, function(key, value) {
+        $("#" + key).prop('checked', value);
+        });
 
         
         function startGame() {
             roles =getRoles();
             $.post('lobby.php?code=<?php echo $inviteCode; ?>', {action:'start_game',roles:roles});
         }
+
+        function refreshPage() {
+            setTimeout(function() {
+                location.reload();
+            }, 5000); 
+        }
+        refreshPage();
     </script>
 </body>
 </html>
