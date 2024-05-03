@@ -29,10 +29,9 @@ if (isset($_GET['code'])) {
     exit();
 }
 
-if(isset($_SESSION['specials'])){
-    $specials = $_SESSION['specials'];
-}else{
-    $specials = array("Assassin" => true, "Merlin" => true, "Percival" => false, "Oberon" =>false, "Morgana" => false, "Mordred" => false);
+if(getLeader()==""){
+    header("Location: index.php");
+    exit();
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
@@ -42,18 +41,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
     
             if($user_id == $leader){
                 
-                $roles = $_POST['roles'];
+                $spec = $_POST['specialChars'];
+                $roles = getRoles($spec,$inviteCode);
                 startGame($roles, $inviteCode);
             }else{
-                echo "You are not the leader!";
+                echo "Nem te vagy a lobbi létrehozója!";
             }
             
             break;
-        
+        case 'main_menu':
+            header("Location: index.php");
+            exit();
         default:
             # code...
             break;
     }
+}
+
+function getRoles($spec, $inviteCode){
+
+    $good = 0;
+    $evil = 0;
+    $minions = 0;
+    $knights = 0;
+    if(in_array("Assassin",$spec)){
+        $evil++;
+    }
+    if(in_array("Oberon",$spec)){
+        $evil++;
+    }
+    if(in_array("Mordred",$spec)){
+        $evil++;
+    }
+    if(in_array("Morgana",$spec)){
+        $evil++;
+    }
+    if(in_array("Merlin",$spec)){
+        $good++;
+    }
+    if(in_array("Percival",$spec)){
+        $good++;
+    }
+    $num = sizeof(getPlayersInLobby($inviteCode));
+    switch ($num) {
+        case 5:
+            $knights = 3-$good;
+            $minions = 2-$evil;
+            break;
+        case 6:
+            $knights = 4-$good;
+            $minions = 2-$evil;
+            break;
+        case 7:
+            $knights = 4-$good;
+            $minions = 3-$evil;
+            break;
+        case 8:
+            $knights = 5-$good;
+            $minions = 3-$evil;
+            break;
+        case 9:
+            $knights = 6-$good;
+            $minions = 3-$evil;
+            break;
+        case 10:
+            $knights = 6-$good;
+            $minions = 4-$evil;
+            break;
+    
+        default:
+            break;
+    }
+    $char_roles = $spec;
+    for ($index = 0; $index < $knights; $index++) {
+        array_push($char_roles,"Knight");
+        
+    }
+    for ($index = 0; $index < $minions; $index++) {
+        array_push($char_roles,"Minion");
+        
+    }
+    
+    return $char_roles;
+
 }
 
 function getLeader(){
@@ -69,10 +139,10 @@ function startGame($roles, $inviteCode){
     $players = getPlayersInLobby($inviteCode);
     $player_size = sizeof($players);
     if($player_size<5){
-        echo "Minimum 5 player is required!";
+        echo "Legalább 5 játékos szükséges!";
     }else
     if($player_size>10){
-        echo "Maximum 10 players can play!";
+        echo "Maximum 10 játékos játszhat!";
     }else{
 
         shuffle($players);
@@ -166,36 +236,37 @@ $playersInLobby = getPlayersInLobby($inviteCode);
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hu">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Lobby</title>
+    <title>Lobbi</title>
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 </head>
 <body>
-    <h3>Logged in as: <?php echo $user_id?></h3>
-    <h2>Game Lobby made by: <?php echo getLeader()?></h2>
+    <h3>Bejelentkezve mint: <?php echo $user_id?></h3>
+    <h2>Lobbi létrehozója: <?php echo getLeader()?></h2>
 
-    <p>Invite Code: <?php echo $inviteCode; ?></p>
+    <p>Invitációs kód: <?php echo $inviteCode; ?></p>
 
     <!-- Players List -->
-    <h3>Players in the Lobby</h3>
+    <h3>A lobbiban lévő játékosok</h3>
     <ul id="playersList">
         <?php foreach ($playersInLobby as $player) : ?>
             <li><?php echo $player; ?></li>
         <?php endforeach; ?>
     </ul>
 
-    <!-- Settings Form -->
-    <h3>Game Settings</h3>
-    
-        <label for="numPlayers">Number of Players (min 5 - max 10): <?php echo sizeof($playersInLobby); ?></label>
+    <label for="numPlayers">Játékosok száma (min 5 - max 10): <?php echo sizeof($playersInLobby); ?></label>
+    <form method="post" action="" <?php if (getLeader() != $user_id) echo 'hidden';?>>
+        <!-- Settings Form -->
+        <h3>Beállítások</h3>
         <br>
-        <label>Special Characters:</label>
+        
+        <label>Speciális szerepek:</label>
         <div id="checkbox-container">
-
-            <input id="option1" type="checkbox" name="specialChars[]" value="Assassin" checked="true"> Assassin
+    
+            <input id="option1" type="checkbox" name="specialChars[]" value="Assassin" checked="true"> Orgyilkos
             <input id="option2" type="checkbox" name="specialChars[]" value="Merlin" checked="true"> Merlin
             <input id="option3" type="checkbox" name="specialChars[]" value="Oberon"> Oberon
             <input id="option4" type="checkbox" name="specialChars[]" value="Percival"> Percival
@@ -204,94 +275,22 @@ $playersInLobby = getPlayersInLobby($inviteCode);
         </div>
         <!-- Add more checkboxes for additional characters -->
         <br><br>
-        <form method="post" action="">
-        <button onclick="startGame()" type="submit" name="action" value="start_game">Start Game</button>
-        </form>
+        
+        <button type="submit" name="action" value="start_game">Játék indítása</button>
+        
+    </form>
+            <form method="post" action="">
+
+                <button type="submit" name="action" value="main_menu">Főmenü</button>
+            </form>
         <form action="logout.php" method="post">
-            <button type="submit">Logout</button>
+            <button type="submit">Kijelentkezés</button>
         </form>
         
     
 
     <script>
-        function getSpecialChars(){
-            var checkboxes = document.getElementsByName("specialChars[]");
-            var checkedCheckboxes = [];
-            for (var i = 0; i < checkboxes.length; i++) {
-                if (checkboxes[i].checked) {
-                    checkedCheckboxes.push(checkboxes[i].value);
-                }
-            }
-            return checkedCheckboxes;
-        }
-
-        function getRoles(){
-            special_chars=getSpecialChars();
-            good = 0;
-            evil = 0;
-            minions = 0;
-            knights = 0;
-            if(special_chars.includes("Assassin")){
-                evil++;
-            }
-            if(special_chars.includes("Oberon")){
-                evil++;
-            }
-            if(special_chars.includes("Mordred")){
-                evil++;
-            }
-            if(special_chars.includes("Morgana")){
-                evil++;
-            }
-            if(special_chars.includes("Merlin")){
-                good++;
-            }
-            if(special_chars.includes("Percival")){
-                good++;
-            }
-            num = <?php echo sizeof($playersInLobby)?>;
-            switch (num) {
-                case 5:
-                    knights = 3-good;
-                    minions = 2-evil;
-                    break;
-                case 6:
-                    knights = 4-good;
-                    minions = 2-evil;
-                    break;
-                case 7:
-                    knights = 4-good;
-                    minions = 3-evil;
-                    break;
-                case 8:
-                    knights = 5-good;
-                    minions = 3-evil;
-                    break;
-                case 9:
-                    knights = 6-good;
-                    minions = 3-evil;
-                    break;
-                case 10:
-                    knights = 6-good;
-                    minions = 4-evil;
-                    break;
-            
-                default:
-                    break;
-            }
-            char_roles = special_chars;
-            for (let index = 0; index < knights; index++) {
-                char_roles.push("Knight");
-                
-            }
-            for (let index = 0; index < minions; index++) {
-                char_roles.push("Minion");
-                
-            }
-            console.log(char_roles);
-            return char_roles;
-
-        }
+        
         //https://www.sitepoint.com/quick-tip-persist-checkbox-checked-state-after-page-reload/
         var checkboxValues = JSON.parse(localStorage.getItem('checkboxValues')) || {};
         var $checkboxes = $("#checkbox-container :checkbox");
@@ -306,15 +305,9 @@ $playersInLobby = getPlayersInLobby($inviteCode);
         $("#" + key).prop('checked', value);
         });
 
-        
-        function startGame() {
-            roles =getRoles();
-            $.post('lobby.php?code=<?php echo $inviteCode; ?>', {action:'start_game',roles:roles});
-        }
-
         function refreshPage() {
             setTimeout(function() {
-                location.reload();
+                window.location.href = window.location.href;
             }, 5000); 
         }
         refreshPage();

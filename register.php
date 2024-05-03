@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'];
     // Check if username already exists
     if (usernameExists($username,$pdo)) {
-        $error_message = "Username already exists. Please choose a different one.";
+        $error_message = "Létező felhasználónév. Válassz másikat!";
         echo $error_message;
     }else{
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
@@ -45,22 +45,23 @@ function usernameExists($username, $pdo) {
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hu">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registration Page</title>
+    <title>Regisztráció</title>
 </head>
 <body>
-    <h2>Registration Page</h2>
+    <h2>Regisztráció</h2>
     <form method="post" action="">
-        <label for="username">Username:</label>
+        <label for="username">Felhasználónév:</label>
         <input type="text" name="username" required><br>
 
-        <label for="password">Password:</label>
+        <label for="password">Jelszó:</label>
         <input type="password" name="password" required><br>
 
-        <input type="submit" value="Register">
+        <button type="submit" value="Register">Regisztráció</button>
     </form>
+    <p><a href="login.php">Bejelentkezés</a></p>
 </body>
 </html>

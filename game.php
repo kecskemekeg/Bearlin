@@ -42,9 +42,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
                 selectNewKing($invite_code);
                 resetMissionVote($invite_code);
                 setGameState($invite_code, "voting");
-                echo "Team selected";
+                echo "Csapat kiválasztva";
             }else{
-                echo "The party size must be ".$current_round_size."!";
+                echo "Válassz ".$current_round_size." játékost a csapatba!";
             }
                
             
@@ -55,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
             }
             setVote($user_id, 1);
             if(isVoteDone($invite_code)){
+                selectNewKing($invite_code);
                 if(isVoteSuccess($invite_code)){
 
                     setGameState($invite_code, "mission");
@@ -63,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
                     setGameState($invite_code, "selection");
                     increaseFailedVotes($invite_code);
                     if(getFailedVotes($invite_code) == 5){
-                        echo "Evil won!";
+                        setGameState($invite_code, "failedvote");
                     }
                 }
             }
@@ -74,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
             }
             setVote($user_id, -1);
             if(isVoteDone($invite_code)){
+                selectNewKing($invite_code);
                 if(isVoteSuccess($invite_code)){
 
                     setGameState($invite_code, "mission");
@@ -82,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
                     setGameState($invite_code, "selection");
                     increaseFailedVotes($invite_code);
                     if(getFailedVotes($invite_code) == 5){
-                        echo "Evil won!";
+                        setGameState($invite_code, "failedvote");
                     }
                 }
             }
@@ -148,24 +150,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
                 setGameState($invite_code,"good");
             }
             break;
-        case 'test':
-            debugVoteSuccess($invite_code);
-            
-            if(isVoteDone($invite_code)){
-                
-                if(isVoteSuccess($invite_code)){
-
-                    setGameState($invite_code, "mission");
-                    setFailedVotes($invite_code,0);
-                }else{
-                    setGameState($invite_code, "selection");
-                    increaseFailedVotes($invite_code);
-                    if(getFailedVotes($invite_code) == 5){
-                        setGameState($invite_code, "evil");
-                    }
-                }
-            }
-            break;
+        case 'main_menu':
+            header("Location: index.php");
+            exit();
         default:
             # code...
             break;
@@ -189,13 +176,6 @@ function isGameOver($invite_code){
         }
     }
     return "no";
-}
-
-function debugVoteSuccess($invite_code){
-    $players = getPlayers($invite_code);
-    foreach ($players as $player) {
-        setVote($player,1);
-    }
 }
 
 function increaseFailedVotes($invite_code){
@@ -280,7 +260,7 @@ function setMissionVote($player, $vote){
     }
 }
 
-function isMissionSuccess($invite_code, $current_round){
+function getMissionFails($invite_code){
     $fails = 0;
     $players = getPlayers($invite_code);
     foreach ($players as $player) {
@@ -288,6 +268,12 @@ function isMissionSuccess($invite_code, $current_round){
             $fails++;
         }
     }
+    return $fails;
+}
+
+function isMissionSuccess($invite_code, $current_round){
+    $fails = getMissionFails($invite_code);
+    $players = getPlayers($invite_code);
     if ($current_round == 4 && sizeof($players) >=7) {
         return $fails <2;
     }else{
@@ -678,101 +664,101 @@ function getPlayersPOV($user_id, $invite_code){
         foreach ($players as $player => $role) {
             array_push($tmp_players, $player);
             if($player == $user_id){
-                array_push($tmp_roles, $role);
+                array_push($tmp_roles, "JÓ");
             }else{
 
                 array_push($tmp_roles, "?");
             }
         }
-        $result = array($tmp_players, $tmp_roles, $kings, $votes, $teams);
+        $result = array($tmp_players, $tmp_roles,  $votes,$kings, $teams);
         return $result;
     }
     if($players[$user_id]=="Oberon"){
         foreach ($players as $player => $role) {
             array_push($tmp_players, $player);
             if($player == $user_id){
-                array_push($tmp_roles, $role);
+                array_push($tmp_roles, "GONOSZ");
             }else{
 
                 array_push($tmp_roles, "?");
             }
         }
-        $result = array($tmp_players, $tmp_roles, $kings, $votes, $teams);
+        $result = array($tmp_players, $tmp_roles,  $votes,$kings, $teams);
         return $result;
     }
     if($players[$user_id]=="Minion"){
         foreach ($players as $player => $role) {
             array_push($tmp_players, $player);
             if($player == $user_id){
-                array_push($tmp_roles, $role);
+                array_push($tmp_roles, "GONOSZ");
             }else if($role == "Assassin" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
-                array_push($tmp_roles, "Evil");
+                array_push($tmp_roles, "GONOSZ");
             }else if(in_array("Oberon", $special_roles)){
 
                 array_push($tmp_roles, "?");
             }else{
-                array_push($tmp_roles, "Good");
+                array_push($tmp_roles, "JÓ");
             }
         }
-        $result = array($tmp_players, $tmp_roles, $kings, $votes, $teams);
+        $result = array($tmp_players, $tmp_roles,  $votes,$kings, $teams);
         return $result;
     }
     if($players[$user_id]=="Assassin"){
         foreach ($players as $player => $role) {
             array_push($tmp_players, $player);
             if($player == $user_id){
-                array_push($tmp_roles, $role);
+                array_push($tmp_roles, "GONOSZ");
             }else if($role == "Assassin" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
-                array_push($tmp_roles, "Evil");
+                array_push($tmp_roles, "GONOSZ");
             }else if(in_array("Oberon", $special_roles)){
 
                 array_push($tmp_roles, "?");
             }else{
-                array_push($tmp_roles, "Good");
+                array_push($tmp_roles, "JÓ");
             }
         }
-        $result = array($tmp_players, $tmp_roles, $kings, $votes, $teams);
+        $result = array($tmp_players, $tmp_roles,  $votes,$kings, $teams);
         return $result;
     }
     if($players[$user_id]=="Mordred"){
         foreach ($players as $player => $role) {
             array_push($tmp_players, $player);
             if($player == $user_id){
-                array_push($tmp_roles, $role);
+                array_push($tmp_roles, "GONOSZ");
             }else if($role == "Assassin" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
-                array_push($tmp_roles, "Evil");
+                array_push($tmp_roles, "GONOSZ");
             }else if(in_array("Oberon", $special_roles)){
 
                 array_push($tmp_roles, "?");
             }else{
-                array_push($tmp_roles, "Good");
+                array_push($tmp_roles, "JÓ");
             }
         }
-        $result = array($tmp_players, $tmp_roles, $kings, $votes, $teams);
+        $result = array($tmp_players, $tmp_roles,  $votes,$kings, $teams);
         return $result;
     }
     if($players[$user_id]=="Morgana"){
         foreach ($players as $player => $role) {
             array_push($tmp_players, $player);
             if($player == $user_id){
-                array_push($tmp_roles, $role);
+                array_push($tmp_roles, "GONOSZ");
             }else if($role == "Assassin" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
-                array_push($tmp_roles, "Evil");
+                array_push($tmp_roles, "GONOSZ");
             }else if(in_array("Oberon", $special_roles)){
 
                 array_push($tmp_roles, "?");
             }else{
-                array_push($tmp_roles, "Good");
+                array_push($tmp_roles, "JÓ");
             }
         }
-        $result = array($tmp_players, $tmp_roles, $kings, $votes, $teams);
+        $result = array($tmp_players, $tmp_roles,  $votes,$kings, $teams);
         return $result;
     }
     if($players[$user_id]=="Percival"){
         foreach ($players as $player => $role) {
             array_push($tmp_players, $player);
             if($player == $user_id){
-                array_push($tmp_roles, $role);
+                array_push($tmp_roles, "JÓ");
             }else if($role == "Merlin"){
                 if(in_array("Morgana", $special_roles)){
                     array_push($tmp_roles, "Merlin/Morgana");
@@ -786,29 +772,53 @@ function getPlayersPOV($user_id, $invite_code){
                 array_push($tmp_roles, "?");
             }
         }
-        $result = array($tmp_players, $tmp_roles, $kings, $votes, $teams);
+        $result = array($tmp_players, $tmp_roles,  $votes,$kings, $teams);
         return $result;
     }
     if($players[$user_id]=="Merlin"){
         foreach ($players as $player => $role) {
             array_push($tmp_players, $player);
             if($player == $user_id){
-                array_push($tmp_roles, $role);
+                array_push($tmp_roles, "JÓ");
             }else if($role == "Assassin" || $role == "Minion" || $role == "Oberon" || $role == "Morgana"){
-                array_push($tmp_roles, "Evil");
+                array_push($tmp_roles, "GONOSZ");
             }else if(in_array("Mordred", $special_roles)){
 
                 array_push($tmp_roles, "?");
             }else{
-                array_push($tmp_roles, "Good");
+                array_push($tmp_roles, "JÓ");
             }
         }
         
-        $result = array($tmp_players, $tmp_roles, $kings, $votes, $teams);
+        $result = array($tmp_players, $tmp_roles,  $votes,$kings, $teams);
         return $result;
     }
 }
 
+function displayRole($role){
+    switch ($role) {
+        case "Assassin":
+            return "Orgyilkos";
+        case "Knight":
+            return "Artúr hű követője";
+        case "Minion":
+            return "Mordred bérence";
+        
+        default:
+            return $role;
+    }
+}
+
+function displayAlignment($al){
+    switch ($al) {
+        case 'good':
+            return "JÓ";
+        case 'evil':
+            return "GONOSZ";
+        default:
+            return $al;
+    }
+}
 function isGamestarted($game_id, $player){
     global $pdo;
     try {
@@ -856,8 +866,10 @@ function getRoundData($i, $game_id){
 
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $res= $data[0]['round'.$i];
-        if ($res == "evil" || $res == "good"){
-            return $res;
+        if ($res == "evil"){
+            return "evil";
+        }else if($res == "good"){
+            return "good";
         }else{
             $roundlist = getRoundList($game_id);
             return $roundlist[$i-1];
@@ -865,6 +877,37 @@ function getRoundData($i, $game_id){
     }catch (PDOException $e){
         die("Connection failed: " . $e->getMessage());
     }
+}
+
+function displayGamestate($gamestate){
+    switch ($gamestate) {
+        case 'voting':
+            return "Szavazás fázis";    
+        case 'selection':
+            return "Csapat összeállítása fázis";
+        case 'mission':
+            return "Küldetés fázis";
+        case 'assassin':
+            return "Orgyilkos fázis";
+        case 'evil':
+            return "Játék vége";
+        case 'good':
+            return "Játék vége";
+        default:
+            # code...
+            break;
+    }
+}
+
+function displayRoundWinner($invite_code){
+    
+    $fails = getMissionFails($invite_code);
+    if(isMissionSuccess($invite_code, getCurrentRound($invite_code))){
+        return "A küldetés sikerrel járt. Balsiker: ".$fails;
+    }else{
+        return "A küldetés elbukott. Balsiker: ".$fails;
+    }
+
 }
 
 function setRoundData($i, $game_id, $round_data){
@@ -906,23 +949,28 @@ $players_and_data = getPlayersPOV($user_id, $invite_code);
 $players = getPlayers($invite_code);
 $roundlist = getRoundList($invite_code);
 $gamestate = getGameState($invite_code);
+$current_round = getCurrentRound($invite_code);
 
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hu">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game</title>
+    <title>Avalon</title>
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 </head>
 <body>
-<h3>Logged in as: <?php echo $user_id?></h3>
-<h3>Your role is <?php echo getRole($user_id,$invite_code)?></h3>
-<h3>Game state: <?php echo $gamestate?></h3>
+<h3>Bejelentkezve mint: <?php echo $user_id?></h3>
+<h3>A szereped: <?php echo displayRole(getRole($user_id,$invite_code)).' ('. displayAlignment(getAlignment($user_id,$invite_code)).')'?></h3>
+<h3><?php echo displayGamestate($gamestate)?></h3>
 
-<h3>Rounds</h3>
+<h3>Körök</h3>
+<div <?php if($current_round == 1 || $gamestate != "selection") echo "hidden"; ?>>
+    
+    <p><?php echo displayRoundWinner($invite_code)?></p>
+</div>
 <div
     class="table-responsive"
 >
@@ -933,21 +981,28 @@ $gamestate = getGameState($invite_code);
         <tbody>
             <tr class="">
                 <?php for ($i=1; $i <= 5; $i++) :?>
-                    <td><?php echo getRoundData($i, $invite_code)?></td>
+                    <td><?php switch(getRoundData($i, $invite_code)){
+                        case 'good':
+                            echo "✔";
+                            break;
+                        case 'evil':
+                            echo "❌";
+                            break;
+                        default:
+                            echo getRoundData($i, $invite_code);
+                    }?></td>
                 <?php endfor;?>
             </tr>          
         </tbody>
     </table>
 </div>
 
-<h3>Players in the Game</h3>
+<h3>Játékosok</h3>
 <table>
     <tr>
-        <th>Player</th>
-        <th>Role</th>
-        <th>King</th>
-        <th>Vote</th>
-        <th>Party</th>
+        <th>Játékos</th>
+        <th>Szerep</th>
+        
     </tr>
     <?php
     // Iterate over the rows of the table
@@ -955,9 +1010,22 @@ $gamestate = getGameState($invite_code);
         echo "<tr>";
         // Iterate over the columns of the table
         for ($j = 0; $j < count($players_and_data); $j++) {
-            if($j == 3 && $gamestate == "voting"){
-                echo "<td>voting</td>";
-            }else{
+            
+            if($j == 2 && $gamestate == "voting"){
+                echo "<td>szavaz...</td>";
+            }else if($players_and_data[$j][$i] == "0"){
+                echo "";
+            }else if($j == 2 && $players_and_data[$j][$i] == 1){
+                echo "<td>👍</td>";
+            }else if($j == 2 && $players_and_data[$j][$i] == -1){
+                echo "<td>👎</td>";
+            }else if($j == 3 && $players_and_data[$j][$i] == 1){
+                echo "<td>👑</td>";
+            }
+            else if($j == 4 && $players_and_data[$j][$i] == 1){
+                echo "<td>⚔</td>";
+            }
+            else{
 
                 echo "<td>" . $players_and_data[$j][$i] . "</td>";
             }
@@ -970,41 +1038,43 @@ $gamestate = getGameState($invite_code);
         <?php foreach ($players as $player) {
             echo '<input type="checkbox" name="select_party_cb[]" value='.$player.' id='.$player.' >'.$player;
         }?>
-        <button type="submit" name="action" value="select_team">Select team</button>
+        <button type="submit" name="action" value="select_team">Csapat kiválasztása</button>
            
 </form>
 
 <form id="vote" method="post" action="" <?php if ($gamestate != "voting" || getVote($user_id) != 0) echo 'hidden'; ?>>
-<p>Do you want to accept this party?</p>
+<p>Elfogadod ezt a csapat összeállítást?</p>
 <button type="submit" name="action" value="vote_yes">Accept</button>
 <button type="submit" name="action" value="vote_no">Decline</button>
 </form>
 
 <form id="mission" method="post" action="" <?php if ($gamestate != "mission" || isInParty($user_id) != 1 || getMissionVote($user_id)!=0) echo 'hidden'; ?>>
-        <p>Will the mission succeed?</p>
-        <button type="submit" name="action" value="success">Success</button>
-        <button type="submit" name="action" value="fail" <?php if (getAlignment($user_id,$invite_code)=="good") echo 'hidden'; ?>>Fail</button>
+        <p>Sikerre viszed a küldetést?</p>
+        <button type="submit" name="action" value="success">Siker</button>
+        <button type="submit" name="action" value="fail" <?php if (getAlignment($user_id,$invite_code)=="good") echo 'hidden'; ?>>Balsiker</button>
 </form>
 <form id="assassin" method="post" action="" <?php if ($gamestate != "assassin" || getRole($user_id,$invite_code) != "Assassin") echo 'hidden'; ?>>
-        <p>Kill Merlin</p>
+        <p>Öld meg Merlint</p>
         <?php foreach ($players as $player) {
             echo '<input type="radio" name="kill_target" value='.$player.' id='.$player.'>'.$player;
         }?>
-        <button type="submit" name="action" value="assassin">Kill</button>
+        <button type="submit" name="action" value="assassin">Véglegesít</button>
         
 </form>
 <div id="good" <?php if ($gamestate != "good") echo 'hidden'; ?>>
-    <p>Congratulations Arthur's knights defeated the minions!</p>
+    <p>Gratulálok, Artúr hű követői legyőzték Mordred bérenceit!</p>
 </div>
 <div id="evil" <?php if ($gamestate != "evil") echo 'hidden'; ?>>
-    <p>The minions of Mordred became victorious!</p>
+    <p>Mordred és a gonosz sötét erői győzedelmeskedtek!</p>
 </div>
+<form method="post" action="">
+
+                <button type="submit" name="action" value="main_menu">Főmenü</button>
+            </form>
 <form action="logout.php" method="post">
-     <button type="submit">Logout</button>
+     <button type="submit">Kijelentkezés</button>
 </form>
-<!-- <form id="test" method="post" action="">
-<button type="submit" name="action" value="test">Test button</button>
-</form> -->
+
 <script>
     //https://www.sitepoint.com/quick-tip-persist-checkbox-checked-state-after-page-reload/
     var checkboxValues = JSON.parse(localStorage.getItem('checkboxValues')) || {};
