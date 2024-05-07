@@ -136,7 +136,7 @@ a becsületért harcolnak, vagy Mordred gonosz céljai mellett törnek lándzsá
 sikeres teljesítésével nyerhetik meg a játékot. A gonoszok akkor győzedelmeskednek, ha három
 küldetés kudarcba fullad. A gonoszok akkor is sikerrel járnak, ha a játék végén meggyilkolják Merlint
 vagy ha egy küldetést a csapat nem tud elvállalni.
-A játékosok a játék során bármikor bármit állíthatnak, bármit megvitathatnak. A beszélgetés, a vádaskodás, a megtévesztés és a logikai következtetés a jó győzelméhez és a gonosz uralmához is fontos. <a href="rulebook_hu.pdf" target="blank">magyar</a> illetve <a
+A játékosok a játék során bármikor bármit állíthatnak, bármit megvitathatnak. A beszélgetés, a vádaskodás, a megtévesztés és a logikai következtetés a jó győzelméhez és a gonosz uralmához is fontos. A játkszabályokat itt találod <a href="rulebook_hu.pdf" target="blank">magyar</a> illetve <a
                 href="rulebook.pdf" target="blank">angol</a> nyelven.</p>
     </div>
 

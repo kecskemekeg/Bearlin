@@ -39,7 +39,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
                 resetTeam($invite_code);
                 resetVote($invite_code);
                 selectTeam($team, $invite_code);
-                selectNewKing($invite_code);
                 resetMissionVote($invite_code);
                 setGameState($invite_code, "voting");
                 echo "Csapat kiválasztva";
@@ -960,42 +959,25 @@ $current_round = getCurrentRound($invite_code);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Avalon</title>
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <link rel="stylesheet" href="css/game.css">
 </head>
 <body>
-<h3>Bejelentkezve mint: <?php echo $user_id?></h3>
+
+<p>Bejelentkezve mint: <?php echo $user_id?></p>
+
+
+
+
+
+<div class="row">
+  <div class="header">
+  
 <h3>A szereped: <?php echo displayRole(getRole($user_id,$invite_code)).' ('. displayAlignment(getAlignment($user_id,$invite_code)).')'?></h3>
 <h3><?php echo displayGamestate($gamestate)?></h3>
-
-<h3>Körök</h3>
-<div <?php if($current_round == 1 || $gamestate != "selection") echo "hidden"; ?>>
-    
-    <p><?php echo displayRoundWinner($invite_code)?></p>
-</div>
-<div
-    class="table-responsive"
->
-    <table
-        class="table table-primary"
-    >
-        
-        <tbody>
-            <tr class="">
-                <?php for ($i=1; $i <= 5; $i++) :?>
-                    <td><?php switch(getRoundData($i, $invite_code)){
-                        case 'good':
-                            echo "✔";
-                            break;
-                        case 'evil':
-                            echo "❌";
-                            break;
-                        default:
-                            echo getRoundData($i, $invite_code);
-                    }?></td>
-                <?php endfor;?>
-            </tr>          
-        </tbody>
-    </table>
-</div>
+  </div>
+  
+  <div class="column">
+ 
 
 <h3>Játékosok</h3>
 <table>
@@ -1034,7 +1016,45 @@ $current_round = getCurrentRound($invite_code);
     }
     ?>
 </table>
+
+</div>
+  <div class="column">
+  <h3>Körök</h3>
+<div <?php if($current_round == 1 || $gamestate != "selection") echo "hidden"; ?>>
+    
+    <p><?php echo displayRoundWinner($invite_code)?></p>
+</div>
+<div
+    class="table-responsive"
+>
+    <table
+        class="table table-primary"
+    >
+        <th style="text-align:center; border: 1px solid black; padding: 5px;">1. kör</th>
+        <th style="text-align:center; border: 1px solid black; padding: 5px;">2. kör</th>
+        <th style="text-align:center; border: 1px solid black; padding: 5px;">3. kör</th>
+        <th style="text-align:center; border: 1px solid black; padding: 5px;">4. kör</th>
+        <th style="text-align:center; border: 1px solid black; padding: 5px;">5. kör</th>
+        <tbody>
+            <tr class="">
+                <?php for ($i=1; $i <= 5; $i++) :?>
+                    <td style="text-align:center; border: 1px solid black;"><?php switch(getRoundData($i, $invite_code)){
+                        case 'good':
+                            echo "✔";
+                            break;
+                        case 'evil':
+                            echo "❌";
+                            break;
+                        default:
+                            echo getRoundData($i, $invite_code);
+                    }?></td>
+                <?php endfor;?>
+            </tr>          
+        </tbody>
+    </table>
+</div>
 <form id="select_party" method="post" action="" <?php if ($gamestate != "selection" || getKing($invite_code) != $user_id) echo 'hidden'; ?>>
+<p>Válaszd ki, kiket szeretnél elvinni a küldetésre! (Magadat is választhatod)</p>
         <?php foreach ($players as $player) {
             echo '<input type="checkbox" name="select_party_cb[]" value='.$player.' id='.$player.' >'.$player;
         }?>
@@ -1043,9 +1063,9 @@ $current_round = getCurrentRound($invite_code);
 </form>
 
 <form id="vote" method="post" action="" <?php if ($gamestate != "voting" || getVote($user_id) != 0) echo 'hidden'; ?>>
-<p>Elfogadod ezt a csapat összeállítást?</p>
-<button type="submit" name="action" value="vote_yes">Accept</button>
-<button type="submit" name="action" value="vote_no">Decline</button>
+<p>Elfogadod ezt a csapat összeállítást? (A ⚔ ikonok jelölik kik vannak a csapatban)</p>
+<button type="submit" name="action" value="vote_yes">Elfogad</button>
+<button type="submit" name="action" value="vote_no">Elutasít</button>
 </form>
 
 <form id="mission" method="post" action="" <?php if ($gamestate != "mission" || isInParty($user_id) != 1 || getMissionVote($user_id)!=0) echo 'hidden'; ?>>
@@ -1067,13 +1087,34 @@ $current_round = getCurrentRound($invite_code);
 <div id="evil" <?php if ($gamestate != "evil") echo 'hidden'; ?>>
     <p>Mordred és a gonosz sötét erői győzedelmeskedtek!</p>
 </div>
-<form method="post" action="">
+</div>  
+  <div class="column">
+<ul>
+    <li>
+        Válassz csapatot a küldetésre! (A köröknél látod, hány játékost kell választani egy körre, a 👑 ikonnal jelzett játékos választ)
+    </li>
+    <li>Szavazzátok meg a csapatot! (Többség dönt)</li>
+    <li>Ha egymás után 5-ször nem sikerül megszavazni a csapatot a gonoszok nyernek!</li>
+    <li>A küldetésen lévők eldöntik, hogy sikerre viszik-e a küldetést (a jók csak sikerre tudnak szavazni)</li>
+    <li>Egy balsiker esetén elbukik a küldetés, ez alól egyetlen kivétel a 4. kör 7 vagy több játékos esetén, mert ott legalább 2 balsiker kell!</li>
+    <li>3 sikertelen küldetés esetén a gonoszok nyernek!</li>
+    <li>3 sikeres küldetés után az Orgyilkos megpróbálja megölni Merlint, ha sikerül akkor a gonoszok nyernek, ha nem akkor a jók!</li>
+    <li>Részletes szabályok itt, <a href="rulebook_hu.pdf" target="blank">magyar</a> illetve <a
+                href="rulebook.pdf" target="blank">angol</a> nyelven</li>
+</ul>
+</div>
+  
+  
+</div>
+<div class="footer">
+  <form method="post" action="">
 
                 <button type="submit" name="action" value="main_menu">Főmenü</button>
             </form>
 <form action="logout.php" method="post">
      <button type="submit">Kijelentkezés</button>
 </form>
+  </div>
 
 <script>
     //https://www.sitepoint.com/quick-tip-persist-checkbox-checked-state-after-page-reload/
