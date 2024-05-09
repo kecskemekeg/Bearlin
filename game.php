@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
             }
             break;
         case 'assassin':
-            if (getGameState($invite_code) != "assassin" || getRole($user_id,$invite_code) != "Assassin"){
+            if (getGameState($invite_code) != "assassin" || getRole($user_id,$invite_code) != "Orgyilkos"){
                 break;
             }
             $kill_target = $_POST['kill_target'];
@@ -690,7 +690,7 @@ function getPlayersPOV($user_id, $invite_code){
             array_push($tmp_players, $player);
             if($player == $user_id){
                 array_push($tmp_roles, "GONOSZ");
-            }else if($role == "Assassin" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
+            }else if($role == "Orgyilkos" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
                 array_push($tmp_roles, "GONOSZ");
             }else if(in_array("Oberon", $special_roles)){
 
@@ -702,12 +702,12 @@ function getPlayersPOV($user_id, $invite_code){
         $result = array($tmp_players, $tmp_roles,  $votes,$kings, $teams);
         return $result;
     }
-    if($players[$user_id]=="Assassin"){
+    if($players[$user_id]=="Orgyilkos"){
         foreach ($players as $player => $role) {
             array_push($tmp_players, $player);
             if($player == $user_id){
                 array_push($tmp_roles, "GONOSZ");
-            }else if($role == "Assassin" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
+            }else if($role == "Orgyilkos" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
                 array_push($tmp_roles, "GONOSZ");
             }else if(in_array("Oberon", $special_roles)){
 
@@ -724,7 +724,7 @@ function getPlayersPOV($user_id, $invite_code){
             array_push($tmp_players, $player);
             if($player == $user_id){
                 array_push($tmp_roles, "GONOSZ");
-            }else if($role == "Assassin" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
+            }else if($role == "Orgyilkos" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
                 array_push($tmp_roles, "GONOSZ");
             }else if(in_array("Oberon", $special_roles)){
 
@@ -741,7 +741,7 @@ function getPlayersPOV($user_id, $invite_code){
             array_push($tmp_players, $player);
             if($player == $user_id){
                 array_push($tmp_roles, "GONOSZ");
-            }else if($role == "Assassin" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
+            }else if($role == "Orgyilkos" || $role == "Minion" || $role == "Mordred" || $role == "Morgana"){
                 array_push($tmp_roles, "GONOSZ");
             }else if(in_array("Oberon", $special_roles)){
 
@@ -779,7 +779,7 @@ function getPlayersPOV($user_id, $invite_code){
             array_push($tmp_players, $player);
             if($player == $user_id){
                 array_push($tmp_roles, "JÓ");
-            }else if($role == "Assassin" || $role == "Minion" || $role == "Oberon" || $role == "Morgana"){
+            }else if($role == "Orgyilkos" || $role == "Minion" || $role == "Oberon" || $role == "Morgana"){
                 array_push($tmp_roles, "GONOSZ");
             }else if(in_array("Mordred", $special_roles)){
 
@@ -796,8 +796,6 @@ function getPlayersPOV($user_id, $invite_code){
 
 function displayRole($role){
     switch ($role) {
-        case "Assassin":
-            return "Orgyilkos";
         case "Knight":
             return "Artúr hű követője";
         case "Minion":
@@ -949,6 +947,9 @@ $players = getPlayers($invite_code);
 $roundlist = getRoundList($invite_code);
 $gamestate = getGameState($invite_code);
 $current_round = getCurrentRound($invite_code);
+$special_roles = getSpecialRoles(getPlayersAndRoles($invite_code));
+sort($special_roles);
+$special_roles = implode(', ', $special_roles);
 
 ?>
 
@@ -992,8 +993,9 @@ $current_round = getCurrentRound($invite_code);
         echo "<tr>";
         // Iterate over the columns of the table
         for ($j = 0; $j < count($players_and_data); $j++) {
-            
-            if($j == 2 && $gamestate == "voting"){
+            if($j == 0 && $players_and_data[$j][$i] == $user_id){
+                echo '<td style="color:#ea8007">' . $players_and_data[$j][$i] . '</td>';
+            }else if($j == 2 && $gamestate == "voting"){
                 echo "<td>szavaz...</td>";
             }else if($players_and_data[$j][$i] == "0"){
                 echo "";
@@ -1016,7 +1018,7 @@ $current_round = getCurrentRound($invite_code);
     }
     ?>
 </table>
-
+<p>Játékban lévő speciális karakterek: <?php echo $special_roles;?></p>
 </div>
   <div class="column">
   <h3>Körök</h3>
@@ -1073,7 +1075,7 @@ $current_round = getCurrentRound($invite_code);
         <button type="submit" name="action" value="success">Siker</button>
         <button type="submit" name="action" value="fail" <?php if (getAlignment($user_id,$invite_code)=="good") echo 'hidden'; ?>>Balsiker</button>
 </form>
-<form id="assassin" method="post" action="" <?php if ($gamestate != "assassin" || getRole($user_id,$invite_code) != "Assassin") echo 'hidden'; ?>>
+<form id="assassin" method="post" action="" <?php if ($gamestate != "assassin" || getRole($user_id,$invite_code) != "Orgyilkos") echo 'hidden'; ?>>
         <p>Öld meg Merlint</p>
         <?php foreach ($players as $player) {
             echo '<input type="radio" name="kill_target" value='.$player.' id='.$player.'>'.$player;

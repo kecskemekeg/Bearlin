@@ -43,6 +43,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
                 
                 $spec = $_POST['specialChars'];
                 $roles = getRoles($spec,$inviteCode);
+                if(!$roles){
+                    echo "Túl sok speciális karakter!";
+                    break;
+                }
                 startGame($roles, $inviteCode);
             }else{
                 echo "Nem te vagy a lobbi létrehozója!";
@@ -64,7 +68,7 @@ function getRoles($spec, $inviteCode){
     $evil = 0;
     $minions = 0;
     $knights = 0;
-    if(in_array("Assassin",$spec)){
+    if(in_array("Orgyilkos",$spec)){
         $evil++;
     }
     if(in_array("Oberon",$spec)){
@@ -113,6 +117,9 @@ function getRoles($spec, $inviteCode){
             break;
     }
     $char_roles = $spec;
+    if($minions < 0){
+        return false;
+    }
     for ($index = 0; $index < $knights; $index++) {
         array_push($char_roles,"Knight");
         
@@ -266,7 +273,7 @@ $playersInLobby = getPlayersInLobby($inviteCode);
         <label>Speciális szerepek:</label>
         <div id="checkbox-container">
     
-            <input id="option1" type="checkbox" name="specialChars[]" value="Assassin" checked="true"> Orgyilkos
+            <input id="option1" type="checkbox" name="specialChars[]" value="Orgyilkos" checked="true"> Orgyilkos
             <input id="option2" type="checkbox" name="specialChars[]" value="Merlin" checked="true"> Merlin
             <input id="option3" type="checkbox" name="specialChars[]" value="Oberon"> Oberon
             <input id="option4" type="checkbox" name="specialChars[]" value="Percival"> Percival
