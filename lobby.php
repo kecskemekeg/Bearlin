@@ -221,7 +221,7 @@ function isGameStarted($game_id, $player){
     global $pdo;
     try {
 
-        // Retrieve players in the lobby
+        
         $query = "SELECT is_started FROM players WHERE game_id = :game_id AND player=:player";
         $stmt = $pdo->prepare($query);
         $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
@@ -236,7 +236,7 @@ function isGameStarted($game_id, $player){
     }
 }
 
-// Retrieve the list of players in the lobby
+
 $playersInLobby = getPlayersInLobby($inviteCode);
 
 
@@ -280,7 +280,7 @@ $playersInLobby = getPlayersInLobby($inviteCode);
             <input id="option5" type="checkbox" name="specialChars[]" value="Mordred"> Mordred
             <input id="option6" type="checkbox" name="specialChars[]" value="Morgana"> Morgana
         </div>
-        <!-- Add more checkboxes for additional characters -->
+        
         <br><br>
         
         <button type="submit" name="action" value="start_game">Játék indítása</button>

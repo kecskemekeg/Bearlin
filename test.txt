@@ -9,8 +9,8 @@ REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES ('te
 REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES ('test8','TG5E2V',0,0,0);
 REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES ('test9','TG5E2V',0,0,0);
 
-REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES ('admin','TG5E2S',1,0,0);
-REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES ('test','TG5E2S',0,0,0);
-REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES ('test2','TG5E2S',0,0,0);
-REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES ('test3','TG5E2S',0,0,0);
-REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES ('test4','TG5E2S',0,0,0);
+REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES ('Bence','TG5E2S',1,0,0);
+REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES ('Feri','TG5E2S',0,0,0);
+REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES ('Gyuri','TG5E2S',0,0,0);
+REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES ('Pisti','TG5E2S',0,0,0);
+REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES ('Kata','TG5E2S',0,0,0);

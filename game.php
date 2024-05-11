@@ -385,7 +385,7 @@ function getPlayersAndVotes($invite_code){
 
     try {
 
-        // Retrieve players in the lobby
+        
         $query = "SELECT player, vote FROM players WHERE game_id = :invite_code";
         $stmt = $pdo->prepare($query);
         $stmt->bindParam(':invite_code', $invite_code, PDO::PARAM_STR);
@@ -410,7 +410,7 @@ function getPlayersAndTeams($invite_code){
 
     try {
 
-        // Retrieve players in the lobby
+        
         $query = "SELECT player, is_in_party FROM players WHERE game_id = :invite_code";
         $stmt = $pdo->prepare($query);
         $stmt->bindParam(':invite_code', $invite_code, PDO::PARAM_STR);
@@ -562,7 +562,7 @@ function getPlayers($invite_code){
 
     try {
 
-        // Retrieve players in the lobby
+        
         $query = "SELECT player FROM players WHERE game_id = :invite_code";
         $stmt = $pdo->prepare($query);
         $stmt->bindParam(':invite_code', $invite_code, PDO::PARAM_STR);
@@ -596,7 +596,7 @@ function getPlayersAndKings($invite_code){
 
     try {
 
-        // Retrieve players in the lobby
+        
         $query = "SELECT player, king FROM players WHERE game_id = :invite_code";
         $stmt = $pdo->prepare($query);
         $stmt->bindParam(':invite_code', $invite_code, PDO::PARAM_STR);
@@ -621,7 +621,7 @@ function getPlayersAndRoles($invite_code) {
 
     try {
 
-        // Retrieve players in the lobby
+        
         $query = "SELECT player, player_role FROM players WHERE game_id = :invite_code";
         $stmt = $pdo->prepare($query);
         $stmt->bindParam(':invite_code', $invite_code, PDO::PARAM_STR);
@@ -820,7 +820,7 @@ function isGamestarted($game_id, $player){
     global $pdo;
     try {
 
-        // Retrieve players in the lobby
+        
         $query = "SELECT is_started FROM players WHERE game_id = :game_id AND player=:player";
         $stmt = $pdo->prepare($query);
         $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
@@ -839,7 +839,7 @@ function isInParty($player){
     global $pdo;
     try {
 
-        // Retrieve players in the lobby
+        
         $query = "SELECT is_in_party FROM players WHERE player=:player";
         $stmt = $pdo->prepare($query);
         $stmt->bindParam(':player', $player, PDO::PARAM_STR);
@@ -1093,16 +1093,16 @@ $special_roles = implode(', ', $special_roles);
   <div class="column">
 <ul>
     <li>
-        Válassz csapatot a küldetésre! (A köröknél látod, hány játékost kell választani egy körre, a 👑 ikonnal jelzett játékos választ)
+        Válassz csapatot a küldetésre! (A köröknél látod, hány játékost kell választani egy körre, a 👑 ikonnal jelzett játékos választ.)
     </li>
-    <li>Szavazzátok meg a csapatot! (Többség dönt)</li>
+    <li>Szavazzátok meg a csapatot! (Többség dönt.)</li>
     <li>Ha egymás után 5-ször nem sikerül megszavazni a csapatot a gonoszok nyernek!</li>
-    <li>A küldetésen lévők eldöntik, hogy sikerre viszik-e a küldetést (a jók csak sikerre tudnak szavazni)</li>
-    <li>Egy balsiker esetén elbukik a küldetés, ez alól egyetlen kivétel a 4. kör 7 vagy több játékos esetén, mert ott legalább 2 balsiker kell!</li>
+    <li>A küldetésen lévők eldöntik, hogy sikerre viszik-e a küldetést (a jók csak sikerre tudnak szavazni).</li>
+    <li>Egy balsiker esetén elbukik a küldetés, ez alól egyetlen kivétel a 4. kör hét vagy több játékos esetén, mert ott legalább két balsiker kell!</li>
     <li>3 sikertelen küldetés esetén a gonoszok nyernek!</li>
-    <li>3 sikeres küldetés után az Orgyilkos megpróbálja megölni Merlint, ha sikerül akkor a gonoszok nyernek, ha nem akkor a jók!</li>
-    <li>Részletes szabályok itt, <a href="rulebook_hu.pdf" target="blank">magyar</a> illetve <a
-                href="rulebook.pdf" target="blank">angol</a> nyelven</li>
+    <li>3 sikeres küldetés után az Orgyilkos megpróbálja megölni Merlint, ha sikerül akkor a gonoszok nyernek, ha nem, akkor a jók!</li>
+    <li>Részletes szabályok itt, <a href="rulebook_hu.pdf" target="blank">magyar</a>, illetve <a
+                href="rulebook.pdf" target="blank">angol</a> nyelven.</li>
 </ul>
 </div>
   
