@@ -36,11 +36,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/login.css">
     <title>Bejelentkezés</title>
 </head>
 <body>
-    <h2>Bejelentkezés</h2>
+    
+    <header>
+        <h1>The Resistance: Avalon</h1>
+    </header>
+    
     <form method="post" action="">
+    <h2>Bejelentkezés</h2>
         <label for="username">Felhasználónév:</label>
         <input type="text" name="username" required><br>
 
@@ -48,7 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input type="password" name="password" required><br>
 
         <button type="submit" value="Login">Bejelentkezés</button>
+        <p><a href="register.php">Regisztráció</a></p>
     </form>
-    <p><a href="register.php">Regisztráció</a></p>
+    
 </body>
 </html>

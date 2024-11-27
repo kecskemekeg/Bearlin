@@ -11,6 +11,9 @@ if (isset($_SESSION['user_id'])) {
     exit();
 }
 
+$error_btns = "";
+$error_join = "";
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     switch ($_POST['action']) {
         case 'resumeGame':
@@ -19,39 +22,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 header("Location: lobby.php?code=$game_id");
                 exit();
             } else {
-                echo "Nincs folyamatban lévő játékod!";
+                $error_btns = "Nincs folyamatban lévő játékod!";
             }
             break;
+        case 'randomGame':
+            $game_id = getRandomGameid();
+            if($game_id == null){
+                $error_btns = "Nincs elérhető játék!";
+                break;
+            }else{
+                try {
+                    $insertQuery = "REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES (:user_id,:game_id,0,0,0)";
+                    $insertStmt = $pdo->prepare($insertQuery);
+                    $insertStmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
+                    $insertStmt->bindParam(':user_id', $user_id, PDO::PARAM_STR);
+                    $insertStmt->execute();
+                } catch (PDOException $e) {
+                    die("Connection failed: " . $e->getMessage());
+                }
+                // Redirect to the lobby page with the invitation code
+                header("Location: lobby.php?code=$game_id");
+                exit();
+            }
+            
         case 'joinGame':
-            if (isset($_POST['joinCode'])) {
-                $joinCode = strtoupper($_POST['joinCode']);
-                if (strlen($joinCode) == 6) {
-                    if (isGameidValid($joinCode)) {
-                        if (getGameid($user_id) == $joinCode) {
-                            echo "Már csatlakoztál ehhez a játékhoz, kérlek nyomj rá a játék folytatása gombra!";
+            if (isset($_POST['game_id'])) {
+                $game_id = strtoupper($_POST['game_id']);
+                if (strlen($game_id) == 6) {
+                    if (isGameidValid($game_id)) {
+                        if (getGameid($user_id) == $game_id) {
+                            $error_join = "Már csatlakoztál ehhez a játékhoz, kérlek nyomj rá a játék folytatása gombra!";
                         } else {
 
                             try {
                                 $insertQuery = "REPLACE INTO players (player,game_id,leader, is_started,is_in_party) VALUES (:user_id,:game_id,0,0,0)";
                                 $insertStmt = $pdo->prepare($insertQuery);
-                                $insertStmt->bindParam(':game_id', $joinCode, PDO::PARAM_STR);
+                                $insertStmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
                                 $insertStmt->bindParam(':user_id', $user_id, PDO::PARAM_STR);
                                 $insertStmt->execute();
                             } catch (PDOException $e) {
                                 die("Connection failed: " . $e->getMessage());
                             }
                             // Redirect to the lobby page with the invitation code
-                            header("Location: lobby.php?code=$joinCode");
+                            header("Location: lobby.php?code=$game_id");
                             exit();
                         }
                     } else {
-                        echo "Nem létezik játék ezzel a kóddal";
+                        $error_join = "Nem létezik játék ezzel a kóddal";
                     }
                 } else {
-                    echo "A kód 6 karakter kell hogy legyen";
+                    $error_join = "A kód 6 karakter kell hogy legyen";
                 }
             } else {
-                echo "Hiányzó kód";
+                $error_join = "Hiányzó kód";
             }
             break;
         case "create_game":
@@ -94,6 +117,23 @@ function getGameid($user_id)
         die("Connection failed: " . $e->getMessage());
     }
 
+}
+
+function getRandomGameid(){
+    global $pdo;
+    try {
+        $query = "SELECT game_id FROM players WHERE leader = 1 AND game_id NOT IN (SELECT game_id FROM games)";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute();
+        $game_ids = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if(sizeof($game_ids)==0){
+            return null;
+        }
+        $random = random_int(0, sizeof($game_ids)-1);
+        return $game_ids[$random]['game_id'];
+    } catch (PDOException $e) {
+        die("Connection failed: " . $e->getMessage());
+    }
 }
 
 function isGameidValid($game_id)
@@ -140,22 +180,27 @@ A játékosok a játék során bármikor bármit állíthatnak, bármit megvitat
                 href="rulebook.pdf" target="blank">angol</a> nyelven.</p>
     </div>
 
-    <!-- Button to create a game -->
+   
     <form method="post" action="">
-
+        <!-- Button to create a game -->
         <button type="submit" name="action" value="create_game">Játék létrehozása</button>
-    </form>
-    <!-- Button to resume a game -->
-
-    <form method="post" action="">
+        <!-- Button to resume a game -->
         <button type="submit" name="action" value="resumeGame">Játék folytatása</button>
+        <!-- Button to join a random game -->
+        <button type="submit" name="action" value="randomGame">Játék keresése</button>
+        
     </form>
+    <p class="error"><?php echo $error_btns?></p>
+
+    
     <!-- Join Game Form -->
+    
+    <form class="join" method="post" action="">
     <h3>Csatlakozás meglévő játékba</h3>
-    <form method="post" action="">
-        <label for="joinCode">Írd be az invitációs kódot!</label>
-        <input type="text" name="joinCode" required>
+        <label for="game_id">Írd be az invitációs kódot!</label>
+        <input type="text" name="game_id" required>
         <button type="submit" name="action" value="joinGame">Csatlakozás</button>
+        <p class="error"><?php echo $error_join?></p>
     </form>
     <div class="footer">
         <form action="logout.php" method="post">

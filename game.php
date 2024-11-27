@@ -14,160 +14,180 @@ if (isset($_SESSION['user_id'])) {
 }
 
 // Check if the invite code is stored in the session
-if (!isset($_SESSION['invite_code'])) {
+if (!isset($_SESSION['game_id'])) {
     // Redirect to the main page if no invite code is found
     header("Location: index.php");
     exit();
 }else{
-    $invite_code = $_SESSION['invite_code'];
+    $game_id = $_SESSION['game_id'];
 }
 
-if(!isGameStarted($invite_code,$user_id)){
+if(!isGameStarted($game_id,$user_id)){
     header("Location: lobby.php");
     exit();
 }
 
+$error = "";
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
     switch ($_POST['action']) {
         case 'select_team':
-            if (getGameState($invite_code) != "selection" || getKing($invite_code) != $user_id){
+            if (getGameState($game_id) != "selection" || getKing($game_id) != $user_id){
                 break;
             }
             $team = $_POST['select_party_cb'];
-            $current_round_size = getRoundList($invite_code)[getCurrentRound($invite_code)-1];
+            $current_round_size = getRoundList($game_id)[getCurrentRound($game_id)-1];
             if (sizeof($team) == $current_round_size) {
-                resetTeam($invite_code);
-                resetVote($invite_code);
-                selectTeam($team, $invite_code);
-                resetMissionVote($invite_code);
-                setGameState($invite_code, "voting");
-                echo "Csapat kiválasztva";
+                resetTeam($game_id);
+                resetVote($game_id);
+                selectTeam($team, $game_id);
+                resetMissionVote($game_id);
+                setGameState($game_id, "voting");
             }else{
-                echo "Válassz ".$current_round_size." játékost a csapatba!";
+                $error = "Válassz ".$current_round_size." játékost a csapatba!";
             }
                
             
             break;
         case 'vote_yes':
-            if (getGameState($invite_code) != "voting" || getVote($user_id) != 0){
+            if (getGameState($game_id) != "voting" || getVote($user_id) != 0){
                 break;
             }
             setVote($user_id, 1);
-            if(isVoteDone($invite_code)){
-                selectNewKing($invite_code);
-                if(isVoteSuccess($invite_code)){
+            if(isVoteDone($game_id)){
+                selectNewKing($game_id);
+                if(isVoteSuccess($game_id)){
 
-                    setGameState($invite_code, "mission");
-                    setFailedVotes($invite_code,0);
+                    setGameState($game_id, "mission");
+                    setFailedVotes($game_id,0);
                 }else{
-                    setGameState($invite_code, "selection");
-                    increaseFailedVotes($invite_code);
-                    if(getFailedVotes($invite_code) == 5){
-                        setGameState($invite_code, "failedvote");
+                    setGameState($game_id, "selection");
+                    increaseFailedVotes($game_id);
+                    if(getFailedVotes($game_id) == 5){
+                        setGameState($game_id, "failedvote");
                     }
                 }
             }
             break;
         case 'vote_no':
-            if (getGameState($invite_code) != "voting" || getVote($user_id) != 0){
+            if (getGameState($game_id) != "voting" || getVote($user_id) != 0){
                 break;
             }
             setVote($user_id, -1);
-            if(isVoteDone($invite_code)){
-                selectNewKing($invite_code);
-                if(isVoteSuccess($invite_code)){
+            if(isVoteDone($game_id)){
+                selectNewKing($game_id);
+                if(isVoteSuccess($game_id)){
 
-                    setGameState($invite_code, "mission");
-                    setFailedVotes($invite_code,0);
+                    setGameState($game_id, "mission");
+                    setFailedVotes($game_id,0);
                 }else{
-                    setGameState($invite_code, "selection");
-                    increaseFailedVotes($invite_code);
-                    if(getFailedVotes($invite_code) == 5){
-                        setGameState($invite_code, "failedvote");
+                    setGameState($game_id, "selection");
+                    increaseFailedVotes($game_id);
+                    if(getFailedVotes($game_id) == 5){
+                        setGameState($game_id, "failedvote");
                     }
                 }
             }
             break;
         case 'success':
-            if (getGameState($invite_code) != "mission" || isInParty($user_id) != 1 || getMissionVote($user_id)!=0){
+            if (getGameState($game_id) != "mission" || isInParty($user_id) != 1 || getMissionVote($user_id)!=0){
                 break;
             }
             setMissionVote($user_id,1);
-            if(isMissionVoteDone($invite_code)){
-                if(isMissionSuccess($invite_code, getCurrentRound($invite_code))){
+            if(isMissionVoteDone($game_id)){
+                if(isMissionSuccess($game_id, getCurrentRound($game_id))){
                     
-                    setRoundData(getCurrentRound($invite_code),$invite_code,"good");
-                    if(isGameOver($invite_code) == "good"){
-                        setGameState($invite_code, "assassin");
+                    setRoundData(getCurrentRound($game_id),$game_id,"good");
+                    if(isGameOver($game_id) == "good"){
+                        setGameState($game_id, "assassin");
                     }else{
-                        setGameState($invite_code, "selection");
+                        setGameState($game_id, "selection");
                     }
                 }else{
-                    setRoundData(getCurrentRound($invite_code),$invite_code,"evil");
-                    if(isGameOver($invite_code) == "evil"){
-                        setGameState($invite_code, "evil");
+                    setRoundData(getCurrentRound($game_id),$game_id,"evil");
+                    if(isGameOver($game_id) == "evil"){
+                        setGameState($game_id, "evil");
                     }else{
-                        setGameState($invite_code, "selection");
+                        setGameState($game_id, "selection");
                     }
                 }
                 
             }
             break;
         case 'fail':
-            if (getGameState($invite_code) != "mission" || isInParty($user_id) != 1 || getMissionVote($user_id)!=0){
+            if (getGameState($game_id) != "mission" || isInParty($user_id) != 1 || getMissionVote($user_id)!=0){
                 break;
             }
             setMissionVote($user_id,-1);
-            if(isMissionVoteDone($invite_code)){
-                if(isMissionSuccess($invite_code, getCurrentRound($invite_code))){
+            if(isMissionVoteDone($game_id)){
+                if(isMissionSuccess($game_id, getCurrentRound($game_id))){
                     
-                    setRoundData(getCurrentRound($invite_code),$invite_code,"good");
-                    if(isGameOver($invite_code) == "good"){
-                        setGameState($invite_code, "assassin");
+                    setRoundData(getCurrentRound($game_id),$game_id,"good");
+                    if(isGameOver($game_id) == "good"){
+                        setGameState($game_id, "assassin");
                     }else{
-                        setGameState($invite_code, "selection");
+                        setGameState($game_id, "selection");
                     }
                 }else{
-                    setRoundData(getCurrentRound($invite_code),$invite_code,"evil");
-                    if(isGameOver($invite_code) == "evil"){
-                        setGameState($invite_code, "evil");
+                    setRoundData(getCurrentRound($game_id),$game_id,"evil");
+                    if(isGameOver($game_id) == "evil"){
+                        setGameState($game_id, "evil");
                     }else{
-                        setGameState($invite_code, "selection");
+                        setGameState($game_id, "selection");
                     }
                 }
                 
             }
             break;
         case 'assassin':
-            if (getGameState($invite_code) != "assassin" || getRole($user_id,$invite_code) != "Orgyilkos"){
+            if (getGameState($game_id) != "assassin" || getRole($user_id,$game_id) != "Orgyilkos"){
                 break;
             }
             $kill_target = $_POST['kill_target'];
-            if(getRole($kill_target, $invite_code)=="Merlin"){
-                setGameState($invite_code, "evil");
+            if(getRole($kill_target, $game_id)=="Merlin"){
+                setGameState($game_id, "evil");
             }else{
-                setGameState($invite_code,"good");
+                setGameState($game_id,"good");
             }
             break;
         case 'main_menu':
             header("Location: index.php");
             exit();
+        case 'chat':
+            $msg = $_POST['message'];
+            sendMessage($game_id, $user_id, $msg);
+            break;
         default:
             # code...
             break;
     }
 }
 
-function isGameOver($invite_code){
+function sendMessage($game_id, $username, $msg){
+    global $pdo;
+    try {
+        $insertQuery = "INSERT INTO messages (game_id, username, msg) VALUES (:game_id,:username,:msg)";
+        $insertStmt = $pdo->prepare($insertQuery);
+        $insertStmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
+        $insertStmt->bindParam(':username', $username, PDO::PARAM_STR);
+        $insertStmt->bindParam(':msg', $msg, PDO::PARAM_STR);
+        $insertStmt->execute();
+    } catch (PDOException $e) {
+        die("Connection failed: " . $e->getMessage());
+    }
+
+}
+
+function isGameOver($game_id){
     $evil = 0;
     $good = 0;
     for ($i=1; $i <= 5; $i++) { 
-        if(getRoundData($i, $invite_code)=="good"){
+        if(getRoundData($i, $game_id)=="good"){
             $good++;
             if($good==3){
                 return "good";
             }
-        }else if(getRoundData($i, $invite_code)=="evil"){
+        }else if(getRoundData($i, $game_id)=="evil"){
             $evil++;
             if($evil==3){
                 return "evil";
@@ -177,13 +197,13 @@ function isGameOver($invite_code){
     return "no";
 }
 
-function increaseFailedVotes($invite_code){
-    $failed_votes = getFailedVotes($invite_code);
-    setFailedVotes($invite_code, $failed_votes+1);
+function increaseFailedVotes($game_id){
+    $failed_votes = getFailedVotes($game_id);
+    setFailedVotes($game_id, $failed_votes+1);
 }
 
-function isVoteSuccess($invite_code){
-    $votes = getPlayersAndVotes($invite_code);
+function isVoteSuccess($game_id){
+    $votes = getPlayersAndVotes($game_id);
     $count = 0;
     foreach ($votes as $player => $vote) {
         $count += $vote;
@@ -191,13 +211,13 @@ function isVoteSuccess($invite_code){
     return $count > 0;
 }
 
-function setFailedVotes($invite_code, $failed_votes){
+function setFailedVotes($game_id, $failed_votes){
     global $pdo;
     try {
 
-        $query = "UPDATE games SET failed_votes=:failed_votes WHERE game_id = :invite_code";
+        $query = "UPDATE games SET failed_votes=:failed_votes WHERE game_id = :game_id";
         $stmt = $pdo->prepare($query);
-        $stmt->bindParam(':invite_code', $invite_code, PDO::PARAM_STR);
+        $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
         $stmt->bindParam(':failed_votes', $failed_votes, PDO::PARAM_INT);
         $stmt->execute();
 
@@ -208,13 +228,13 @@ function setFailedVotes($invite_code, $failed_votes){
     }
 }
 
-function getFailedVotes($invite_code){
+function getFailedVotes($game_id){
     global $pdo;
     try {
 
-        $query = "SELECT failed_votes FROM games WHERE game_id = :invite_code";
+        $query = "SELECT failed_votes FROM games WHERE game_id = :game_id";
         $stmt = $pdo->prepare($query);
-        $stmt->bindParam(':invite_code', $invite_code, PDO::PARAM_STR);
+        $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
         $stmt->execute();
 
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -259,9 +279,9 @@ function setMissionVote($player, $vote){
     }
 }
 
-function getMissionFails($invite_code){
+function getMissionFails($game_id){
     $fails = 0;
-    $players = getPlayers($invite_code);
+    $players = getPlayers($game_id);
     foreach ($players as $player) {
         if(getMissionVote($player)== -1){
             $fails++;
@@ -270,9 +290,9 @@ function getMissionFails($invite_code){
     return $fails;
 }
 
-function isMissionSuccess($invite_code, $current_round){
-    $fails = getMissionFails($invite_code);
-    $players = getPlayers($invite_code);
+function isMissionSuccess($game_id, $current_round){
+    $fails = getMissionFails($game_id);
+    $players = getPlayers($game_id);
     if ($current_round == 4 && sizeof($players) >=7) {
         return $fails <2;
     }else{
@@ -280,8 +300,8 @@ function isMissionSuccess($invite_code, $current_round){
     }
 }
 
-function isMissionVoteDone($invite_code){
-    $players = getPlayersAndTeams($invite_code);
+function isMissionVoteDone($game_id){
+    $players = getPlayersAndTeams($game_id);
     foreach ($players as $player => $in_team) {
         if ($in_team == 1 && getMissionVote($player) == 0) {
             return false;
@@ -290,22 +310,22 @@ function isMissionVoteDone($invite_code){
     return true;
 }
 
-function resetMissionVote($invite_code){
-    $players = getPlayers($invite_code);
+function resetMissionVote($game_id){
+    $players = getPlayers($game_id);
     foreach ($players as $player) {
         setMissionVote($player,0);
     }
 }
 
-function resetVote($invite_code){
-    $players = getPlayers($invite_code);
+function resetVote($game_id){
+    $players = getPlayers($game_id);
     foreach ($players as $player) {
         setVote($player,0);
     }
 }
 
-function isVoteDone($invite_code){
-    $votes = getPlayersAndVotes($invite_code);
+function isVoteDone($game_id){
+    $votes = getPlayersAndVotes($game_id);
     foreach ($votes as $player => $vote) {
         if($vote == 0){
             return false;
@@ -347,13 +367,13 @@ function getVote($player){
     }
 }
 
-function setGameState($invite_code, $gamestate){
+function setGameState($game_id, $gamestate){
     global $pdo;
     try {
 
-        $query = "UPDATE games SET gamestate=:gamestate WHERE game_id = :invite_code";
+        $query = "UPDATE games SET gamestate=:gamestate WHERE game_id = :game_id";
         $stmt = $pdo->prepare($query);
-        $stmt->bindParam(':invite_code', $invite_code, PDO::PARAM_STR);
+        $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
         $stmt->bindParam(':gamestate', $gamestate, PDO::PARAM_STR);
         $stmt->execute();
 
@@ -362,13 +382,13 @@ function setGameState($invite_code, $gamestate){
     }
 }
 
-function getGameState($invite_code){
+function getGameState($game_id){
     global $pdo;
     try {
 
-        $query = "SELECT gamestate FROM games WHERE game_id = :invite_code";
+        $query = "SELECT gamestate FROM games WHERE game_id = :game_id";
         $stmt = $pdo->prepare($query);
-        $stmt->bindParam(':invite_code', $invite_code, PDO::PARAM_STR);
+        $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
         $stmt->execute();
 
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -380,15 +400,15 @@ function getGameState($invite_code){
     }
 }
 
-function getPlayersAndVotes($invite_code){
+function getPlayersAndVotes($game_id){
     global $pdo;
 
     try {
 
         
-        $query = "SELECT player, vote FROM players WHERE game_id = :invite_code";
+        $query = "SELECT player, vote FROM players WHERE game_id = :game_id";
         $stmt = $pdo->prepare($query);
-        $stmt->bindParam(':invite_code', $invite_code, PDO::PARAM_STR);
+        $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
         $stmt->execute();
 
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -405,15 +425,15 @@ function getPlayersAndVotes($invite_code){
     }
 }
 
-function getPlayersAndTeams($invite_code){
+function getPlayersAndTeams($game_id){
     global $pdo;
 
     try {
 
         
-        $query = "SELECT player, is_in_party FROM players WHERE game_id = :invite_code";
+        $query = "SELECT player, is_in_party FROM players WHERE game_id = :game_id";
         $stmt = $pdo->prepare($query);
-        $stmt->bindParam(':invite_code', $invite_code, PDO::PARAM_STR);
+        $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
         $stmt->execute();
 
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -445,22 +465,22 @@ function setTeam($player, $team){
         die("Connection failed: " . $e->getMessage());
     }
 }
-function selectTeam($team, $invite_code){
+function selectTeam($team, $game_id){
     foreach ($team as $player) {
         setTeam($player, 1);
     }
 }
 
-function resetTeam($invite_code){
-    $players = getPlayers($invite_code);
+function resetTeam($game_id){
+    $players = getPlayers($game_id);
     foreach ($players as $player) {
         setTeam($player,0);
     }
 }
 
-function selectNewKing($invite_code){
+function selectNewKing($game_id){
     global $pdo;
-    $players = getPlayersAndKings($invite_code);
+    $players = getPlayersAndKings($game_id);
     $nextking = false;
     foreach ($players as $player => $king) {
         if($king == 1){
@@ -495,13 +515,13 @@ function setKing($player, $king){
     }
 }
 
-function getKing($invite_code){
+function getKing($game_id){
     global $pdo;
     try {
 
-        $query = "SELECT player FROM players WHERE game_id = :invite_code AND king = 1";
+        $query = "SELECT player FROM players WHERE game_id = :game_id AND king = 1";
         $stmt = $pdo->prepare($query);
-        $stmt->bindParam(':invite_code', $invite_code, PDO::PARAM_STR);
+        $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
         $stmt->execute();
 
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -513,8 +533,8 @@ function getKing($invite_code){
     }
 }
 
-function getRoundList($invite_code){
-    switch (sizeof(getPlayersAndRoles($invite_code))) {
+function getRoundList($game_id){
+    switch (sizeof(getPlayersAndRoles($game_id))) {
         case 5:
             return array(2,3,2,3,3);
         case 6:
@@ -541,13 +561,13 @@ function getCurrentRound($game_id){
     }
 }
 
-function getRole($user_id, $invite_code){
+function getRole($user_id, $game_id){
     global $pdo;
     try{
 
-        $query = "SELECT player_role FROM players WHERE player=:user_id AND game_id = :inviteCode";
+        $query = "SELECT player_role FROM players WHERE player=:user_id AND game_id = :game_id";
         $stmt = $pdo->prepare($query);
-        $stmt->bindParam(':inviteCode', $invite_code, PDO::PARAM_STR);
+        $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
         $stmt->bindParam(':user_id', $user_id, PDO::PARAM_STR);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC)[0]['player_role'];
@@ -557,15 +577,15 @@ function getRole($user_id, $invite_code){
 
 }
 
-function getPlayers($invite_code){
+function getPlayers($game_id){
     global $pdo;
 
     try {
 
         
-        $query = "SELECT player FROM players WHERE game_id = :invite_code";
+        $query = "SELECT player FROM players WHERE game_id = :game_id";
         $stmt = $pdo->prepare($query);
-        $stmt->bindParam(':invite_code', $invite_code, PDO::PARAM_STR);
+        $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
         $stmt->execute();
 
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -582,8 +602,8 @@ function getPlayers($invite_code){
     }
 }
 
-function getAlignment($user_id, $invite_code){
-    $role = getRole($user_id, $invite_code);
+function getAlignment($user_id, $game_id){
+    $role = getRole($user_id, $game_id);
     if($role=="Merlin" || $role=="Knight" || $role=="Percival"){
         return "good";
     }else{
@@ -591,15 +611,15 @@ function getAlignment($user_id, $invite_code){
     }
 }
 
-function getPlayersAndKings($invite_code){
+function getPlayersAndKings($game_id){
     global $pdo;
 
     try {
 
         
-        $query = "SELECT player, king FROM players WHERE game_id = :invite_code";
+        $query = "SELECT player, king FROM players WHERE game_id = :game_id";
         $stmt = $pdo->prepare($query);
-        $stmt->bindParam(':invite_code', $invite_code, PDO::PARAM_STR);
+        $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
         $stmt->execute();
 
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -616,15 +636,15 @@ function getPlayersAndKings($invite_code){
     }
 }
 
-function getPlayersAndRoles($invite_code) {
+function getPlayersAndRoles($game_id) {
     global $pdo;
 
     try {
 
         
-        $query = "SELECT player, player_role FROM players WHERE game_id = :invite_code";
+        $query = "SELECT player, player_role FROM players WHERE game_id = :game_id";
         $stmt = $pdo->prepare($query);
-        $stmt->bindParam(':invite_code', $invite_code, PDO::PARAM_STR);
+        $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
         $stmt->execute();
 
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -651,14 +671,14 @@ function getSpecialRoles($players){
     return $result;
 }
 
-function getPlayersPOV($user_id, $invite_code){
-    $players = getPlayersAndRoles($invite_code);
+function getPlayersPOV($user_id, $game_id){
+    $players = getPlayersAndRoles($game_id);
     $tmp_players = array();
     $tmp_roles = array();
     $special_roles = getSpecialRoles($players);
-    $kings = array_values(getPlayersAndKings($invite_code));
-    $votes = array_values(getPlayersAndVotes($invite_code));
-    $teams = array_values(getPlayersAndTeams($invite_code));
+    $kings = array_values(getPlayersAndKings($game_id));
+    $votes = array_values(getPlayersAndVotes($game_id));
+    $teams = array_values(getPlayersAndTeams($game_id));
     if($players[$user_id]=="Knight"){
         foreach ($players as $player => $role) {
             array_push($tmp_players, $player);
@@ -896,10 +916,10 @@ function displayGamestate($gamestate){
     }
 }
 
-function displayRoundWinner($invite_code){
+function displayRoundWinner($game_id){
     
-    $fails = getMissionFails($invite_code);
-    if(isMissionSuccess($invite_code, getCurrentRound($invite_code))){
+    $fails = getMissionFails($game_id);
+    if(isMissionSuccess($game_id, getCurrentRound($game_id))){
         return "A küldetés sikerrel járt. Balsiker: ".$fails;
     }else{
         return "A küldetés elbukott. Balsiker: ".$fails;
@@ -942,12 +962,12 @@ function setRoundData($i, $game_id, $round_data){
     }
 }
 
-$players_and_data = getPlayersPOV($user_id, $invite_code);
-$players = getPlayers($invite_code);
-$roundlist = getRoundList($invite_code);
-$gamestate = getGameState($invite_code);
-$current_round = getCurrentRound($invite_code);
-$special_roles = getSpecialRoles(getPlayersAndRoles($invite_code));
+$players_and_data = getPlayersPOV($user_id, $game_id);
+$players = getPlayers($game_id);
+$roundlist = getRoundList($game_id);
+$gamestate = getGameState($game_id);
+$current_round = getCurrentRound($game_id);
+$special_roles = getSpecialRoles(getPlayersAndRoles($game_id));
 sort($special_roles);
 $special_roles = implode(', ', $special_roles);
 
@@ -964,18 +984,19 @@ $special_roles = implode(', ', $special_roles);
 </head>
 <body>
 
-<p>Bejelentkezve mint: <?php echo $user_id?></p>
+<p>Bejelentkezve mint: <label id="username"><?php echo $user_id?></label></p>
+<p>A játék kódja: <label id="game_id"><?php echo $game_id?></label></p>
 
-
+<div class="header">
+  
+<h3>A szereped: <?php echo displayRole(getRole($user_id,$game_id)).' ('. displayAlignment(getAlignment($user_id,$game_id)).')'?></h3>
+<h3 id="gamestate"></h3>
+  </div>
 
 
 
 <div class="row">
-  <div class="header">
   
-<h3>A szereped: <?php echo displayRole(getRole($user_id,$invite_code)).' ('. displayAlignment(getAlignment($user_id,$invite_code)).')'?></h3>
-<h3><?php echo displayGamestate($gamestate)?></h3>
-  </div>
   
   <div class="column">
  
@@ -992,110 +1013,113 @@ $special_roles = implode(', ', $special_roles);
     for ($i = 0; $i < count($players); $i++) {
         echo "<tr>";
         // Iterate over the columns of the table
-        for ($j = 0; $j < count($players_and_data); $j++) {
+        for ($j = 0; $j < 2; $j++) {
             if($j == 0 && $players_and_data[$j][$i] == $user_id){
                 echo '<td style="color:#ea8007">' . $players_and_data[$j][$i] . '</td>';
-            }else if($j == 2 && $gamestate == "voting"){
-                echo "<td>szavaz...</td>";
-            }else if($players_and_data[$j][$i] == "0"){
-                echo "";
-            }else if($j == 2 && $players_and_data[$j][$i] == 1){
-                echo "<td>👍</td>";
-            }else if($j == 2 && $players_and_data[$j][$i] == -1){
-                echo "<td>👎</td>";
-            }else if($j == 3 && $players_and_data[$j][$i] == 1){
-                echo "<td>👑</td>";
-            }
-            else if($j == 4 && $players_and_data[$j][$i] == 1){
-                echo "<td>⚔</td>";
-            }
-            else{
-
+            }else{
                 echo "<td>" . $players_and_data[$j][$i] . "</td>";
             }
         }
+        echo "<td id='playerdata$i'>"; //will be populated by JavaScript
+        echo "</td>";
         echo "</tr>";
     }
     ?>
 </table>
 <p>Játékban lévő speciális karakterek: <?php echo $special_roles;?></p>
+
 </div>
-  <div class="column">
-  <h3>Körök</h3>
-<div <?php if($current_round == 1 || $gamestate != "selection") echo "hidden"; ?>>
+  
+<div id="game-rounds" class="column">
+<h3>Körök</h3>
+<div id="round_result" hidden>
+    <p id="round_result_label"></p>
     
-    <p><?php echo displayRoundWinner($invite_code)?></p>
 </div>
-<div
-    class="table-responsive"
->
-    <table
-        class="table table-primary"
-    >
-        <th style="text-align:center; border: 1px solid black; padding: 5px;">1. kör</th>
-        <th style="text-align:center; border: 1px solid black; padding: 5px;">2. kör</th>
-        <th style="text-align:center; border: 1px solid black; padding: 5px;">3. kör</th>
-        <th style="text-align:center; border: 1px solid black; padding: 5px;">4. kör</th>
-        <th style="text-align:center; border: 1px solid black; padding: 5px;">5. kör</th>
-        <tbody>
-            <tr class="">
-                <?php for ($i=1; $i <= 5; $i++) :?>
-                    <td style="text-align:center; border: 1px solid black;"><?php switch(getRoundData($i, $invite_code)){
-                        case 'good':
-                            echo "✔";
-                            break;
-                        case 'evil':
-                            echo "❌";
-                            break;
-                        default:
-                            echo getRoundData($i, $invite_code);
-                    }?></td>
-                <?php endfor;?>
-            </tr>          
-        </tbody>
-    </table>
-</div>
-<form id="select_party" method="post" action="" <?php if ($gamestate != "selection" || getKing($invite_code) != $user_id) echo 'hidden'; ?>>
+    <div class="table-responsive">
+        <table class="table table-primary" style="border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="text-align:center; border: 1px solid black; padding: 5px;">1. kör</th>
+                    <th style="text-align:center; border: 1px solid black; padding: 5px;">2. kör</th>
+                    <th style="text-align:center; border: 1px solid black; padding: 5px;">3. kör</th>
+                    <th style="text-align:center; border: 1px solid black; padding: 5px;">4. kör</th>
+                    <th style="text-align:center; border: 1px solid black; padding: 5px;">5. kör</th>
+                </tr>
+            </thead>
+            <tbody id="round-results">
+                <!-- Rows will be populated by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+
+<form id="select_party" method="post" action="" hidden>
 <p>Válaszd ki, kiket szeretnél elvinni a küldetésre! (Magadat is választhatod)</p>
-        <?php foreach ($players as $player) {
-            echo '<input type="checkbox" name="select_party_cb[]" value='.$player.' id='.$player.' >'.$player;
-        }?>
+        <div>
+            <?php foreach ($players as $player) {
+                echo '<input type="checkbox" name="select_party_cb[]" value="'.$player.'" id="'.$player.'" ><label for="'.$player.'">'.$player.'</label><br>';
+            }?>
+        </div>
         <button type="submit" name="action" value="select_team">Csapat kiválasztása</button>
-           
+        <p class="error"><?php echo $error?> </p>   
 </form>
 
-<form id="vote" method="post" action="" <?php if ($gamestate != "voting" || getVote($user_id) != 0) echo 'hidden'; ?>>
+<form id="vote" method="post" action="" hidden>
 <p>Elfogadod ezt a csapat összeállítást? (A ⚔ ikonok jelölik kik vannak a csapatban)</p>
-<button type="submit" name="action" value="vote_yes">Elfogad</button>
-<button type="submit" name="action" value="vote_no">Elutasít</button>
+<div>
+    <button type="submit" name="action" value="vote_yes">Elfogad</button>
+    <button type="submit" name="action" value="vote_no">Elutasít</button>
+</div>
 </form>
 
-<form id="mission" method="post" action="" <?php if ($gamestate != "mission" || isInParty($user_id) != 1 || getMissionVote($user_id)!=0) echo 'hidden'; ?>>
+<form id="mission" method="post" action="" hidden>
         <p>Sikerre viszed a küldetést?</p>
-        <button type="submit" name="action" value="success">Siker</button>
-        <button type="submit" name="action" value="fail" <?php if (getAlignment($user_id,$invite_code)=="good") echo 'hidden'; ?>>Balsiker</button>
+        <div>
+            <button type="submit" name="action" value="success">Siker</button>
+            <button id="fail_button" type="submit" name="action" value="fail" hidden>Balsiker</button>
+        </div>
 </form>
-<form id="assassin" method="post" action="" <?php if ($gamestate != "assassin" || getRole($user_id,$invite_code) != "Orgyilkos") echo 'hidden'; ?>>
+<form id="assassin" method="post" action="" hidden>
         <p>Öld meg Merlint</p>
-        <?php foreach ($players as $player) {
-            echo '<input type="radio" name="kill_target" value='.$player.' id='.$player.'>'.$player;
-        }?>
+        <div>
+            <?php foreach ($players as $player) {
+                echo '<input type="radio" name="kill_target" value="'.$player.'" id="'.$player.'" ><label for="'.$player.'">'.$player.'</label><br>';
+            }?>
+        </div>
         <button type="submit" name="action" value="assassin">Véglegesít</button>
         
 </form>
-<div id="good" <?php if ($gamestate != "good") echo 'hidden'; ?>>
+<div id="good" hidden>
     <p>Gratulálok, Artúr hű követői legyőzték Mordred bérenceit!</p>
 </div>
-<div id="evil" <?php if ($gamestate != "evil") echo 'hidden'; ?>>
+<div id="evil" hidden>
     <p>Mordred és a gonosz sötét erői győzedelmeskedtek!</p>
 </div>
+
+</div>
+
+<div class="column">
+<h3>Chat</h3>
+<div id="chatbox"></div>
+            
+    <form method="post" action="" id="messageForm">
+        <input type="text" id="message" name="message" placeholder="Írj egy üzenetet" required>
+        <button type="submit" name="action" value="chat">Küldés</button>
+    </form>
+  
+  
+</div>
+
+</div>
+
 </div>  
-  <div class="column">
+
 <ul>
     <li>
-        Válassz csapatot a küldetésre! (A köröknél látod, hány játékost kell választani egy körre, a 👑 ikonnal jelzett játékos választ.)
+        Válassz csapatot a küldetésre! (A köröknél látod, hány játékost kell választani az adott körben, a 👑 ikonnal jelzett játékos választ.)
     </li>
-    <li>Szavazzátok meg a csapatot! (Többség dönt.)</li>
+    <li>Szavazzátok meg a csapatot! (Többség dönt, a ⚔ ikonnal jelzett játékosok vannak a csapatban.)</li>
     <li>Ha egymás után 5-ször nem sikerül megszavazni a csapatot a gonoszok nyernek!</li>
     <li>A küldetésen lévők eldöntik, hogy sikerre viszik-e a küldetést (a jók csak sikerre tudnak szavazni).</li>
     <li>Egy balsiker esetén elbukik a küldetés, ez alól egyetlen kivétel a 4. kör hét vagy több játékos esetén, mert ott legalább két balsiker kell!</li>
@@ -1104,10 +1128,8 @@ $special_roles = implode(', ', $special_roles);
     <li>Részletes szabályok itt, <a href="rulebook_hu.pdf" target="blank">magyar</a>, illetve <a
                 href="rulebook.pdf" target="blank">angol</a> nyelven.</li>
 </ul>
-</div>
-  
-  
-</div>
+
+
 <div class="footer">
   <form method="post" action="">
 
@@ -1118,27 +1140,39 @@ $special_roles = implode(', ', $special_roles);
 </form>
   </div>
 
+<script src="game.js"></script>
 <script>
     //https://www.sitepoint.com/quick-tip-persist-checkbox-checked-state-after-page-reload/
     var checkboxValues = JSON.parse(localStorage.getItem('checkboxValues')) || {};
-        var $checkboxes = $("#select_party :checkbox");
+    var $checkboxes = $("#select_party :checkbox");
 
-        $checkboxes.on("change", function(){
-        $checkboxes.each(function(){
-            checkboxValues[this.id] = this.checked;
-        });
-        localStorage.setItem("checkboxValues", JSON.stringify(checkboxValues));
-        });
-        $.each(checkboxValues, function(key, value) {
-        $("#" + key).prop('checked', value);
-        });
-    
+    $checkboxes.on("change", function(){
+    $checkboxes.each(function(){
+        checkboxValues[this.id] = this.checked;
+    });
+    localStorage.setItem("checkboxValues", JSON.stringify(checkboxValues));
+    });
+    $.each(checkboxValues, function(key, value) {
+    $("#" + key).prop('checked', value);
+    });
+
+    //keep scrollposition
+    document.addEventListener("DOMContentLoaded", function(event) { 
+        var scrollpos = localStorage.getItem('scrollpos');
+        if (scrollpos) window.scrollTo(0, scrollpos);
+    });
+
+    window.onbeforeunload = function(e) {
+        localStorage.setItem('scrollpos', window.scrollY);
+    };
+
     function refreshPage() {
         setTimeout(function() {
             window.location.href = window.location.href;
         }, 5000); 
     }
-    refreshPage();
+    //refreshPage();
 </script>
+
 </body>
 </html>

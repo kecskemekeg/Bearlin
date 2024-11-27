@@ -49,11 +49,15 @@ function usernameExists($username, $pdo) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/login.css">
     <title>Regisztráció</title>
 </head>
 <body>
-    <h2>Regisztráció</h2>
+<header>
+        <h1>The Resistance: Avalon</h1>
+    </header>
     <form method="post" action="">
+    <h2>Regisztráció</h2>
         <label for="username">Felhasználónév:</label>
         <input type="text" name="username" required><br>
 
@@ -61,7 +65,8 @@ function usernameExists($username, $pdo) {
         <input type="password" name="password" required><br>
 
         <button type="submit" value="Register">Regisztráció</button>
+        <p><a href="login.php">Bejelentkezés</a></p>
     </form>
-    <p><a href="login.php">Bejelentkezés</a></p>
+   
 </body>
 </html>

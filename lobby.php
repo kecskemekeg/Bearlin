@@ -15,11 +15,11 @@ if (isset($_SESSION['user_id'])) {
 
 // Check if an invite code is provided
 if (isset($_GET['code'])) {
-    $inviteCode = $_GET['code'];
+    $game_id = $_GET['code'];
 
     // Store the invite code in the session
-    $_SESSION['invite_code'] = $inviteCode;
-    if (isGameStarted($inviteCode, $user_id)){
+    $_SESSION['game_id'] = $game_id;
+    if (isGameStarted($game_id, $user_id)){
         header("Location: game.php");
         exit();
     }
@@ -34,6 +34,9 @@ if(getLeader()==""){
     exit();
 }
 
+
+$error = "";
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
     switch ($_POST['action']) {
         case 'start_game':
@@ -42,14 +45,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
             if($user_id == $leader){
                 
                 $spec = $_POST['specialChars'];
-                $roles = getRoles($spec,$inviteCode);
+                $roles = getRoles($spec,$game_id);
                 if(!$roles){
-                    echo "Túl sok speciális karakter!";
+                    $error = "Túl sok speciális karakter!";
                     break;
                 }
-                startGame($roles, $inviteCode);
+                startGame($roles, $game_id);
             }else{
-                echo "Nem te vagy a lobbi létrehozója!";
+                $error = "Nem te vagy a lobbi létrehozója!";
             }
             
             break;
@@ -62,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])){
     }
 }
 
-function getRoles($spec, $inviteCode){
+function getRoles($spec, $game_id){
 
     $good = 0;
     $evil = 0;
@@ -86,7 +89,7 @@ function getRoles($spec, $inviteCode){
     if(in_array("Percival",$spec)){
         $good++;
     }
-    $num = sizeof(getPlayersInLobby($inviteCode));
+    $num = sizeof(getPlayersInLobby($game_id));
     switch ($num) {
         case 5:
             $knights = 3-$good;
@@ -135,21 +138,22 @@ function getRoles($spec, $inviteCode){
 
 function getLeader(){
     global $pdo;
-    $query = "SELECT player FROM players WHERE game_id = :inviteCode AND leader = 1";
+    $query = "SELECT player FROM players WHERE game_id = :game_id AND leader = 1";
     $stmt = $pdo->prepare($query);
-    $stmt->bindParam(':inviteCode', $_SESSION['invite_code'], PDO::PARAM_STR);
+    $stmt->bindParam(':game_id', $_SESSION['game_id'], PDO::PARAM_STR);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC)[0]['player'];
 }
 
-function startGame($roles, $inviteCode){
-    $players = getPlayersInLobby($inviteCode);
+function startGame($roles, $game_id){
+    global $error;
+    $players = getPlayersInLobby($game_id);
     $player_size = sizeof($players);
     if($player_size<5){
-        echo "Legalább 5 játékos szükséges!";
+        $error = "Legalább 5 játékos szükséges!";
     }else
     if($player_size>10){
-        echo "Maximum 10 játékos játszhat!";
+        $error = "Maximum 10 játékos játszhat!";
     }else{
 
         shuffle($players);
@@ -161,18 +165,18 @@ function startGame($roles, $inviteCode){
     
             foreach ($content as $player => $role){
                 if($first){
-                    $insertQuery = "UPDATE players SET king=1, player_role=:player_role, is_started=1 WHERE game_id = :inviteCode AND player = :player";
+                    $insertQuery = "UPDATE players SET king=1, player_role=:player_role, is_started=1 WHERE game_id = :game_id AND player = :player";
                     $insertStmt = $pdo->prepare($insertQuery);
-                    $insertStmt->bindParam(':inviteCode', $inviteCode, PDO::PARAM_STR);
+                    $insertStmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
                     $insertStmt->bindParam(':player', $player, PDO::PARAM_STR);
                     $insertStmt->bindParam(':player_role', $role, PDO::PARAM_STR);
                     $insertStmt->execute();
                     $first = false;
                 }else{
     
-                    $insertQuery = "UPDATE players SET king=0, player_role=:player_role, is_started=1  WHERE game_id = :inviteCode AND player = :player";
+                    $insertQuery = "UPDATE players SET king=0, player_role=:player_role, is_started=1  WHERE game_id = :game_id AND player = :player";
                         $insertStmt = $pdo->prepare($insertQuery);
-                        $insertStmt->bindParam(':inviteCode', $inviteCode, PDO::PARAM_STR);
+                        $insertStmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
                         $insertStmt->bindParam(':player', $player, PDO::PARAM_STR);
                         $insertStmt->bindParam(':player_role', $role, PDO::PARAM_STR);
                         $insertStmt->execute();
@@ -180,7 +184,7 @@ function startGame($roles, $inviteCode){
             }
             $insertQuery = "REPLACE INTO games (game_id, player_size, gamestate) VALUES (:game_id, :player_size, 'selection')";
                 $insertStmt = $pdo->prepare($insertQuery);
-                $insertStmt->bindParam(':game_id', $inviteCode, PDO::PARAM_STR);
+                $insertStmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
                 $insertStmt->bindParam(':player_size', $player_size, PDO::PARAM_STR);
                 $insertStmt->execute();
         }catch (PDOException $e){
@@ -194,15 +198,15 @@ function startGame($roles, $inviteCode){
 
 
 // Function to get the list of players in the lobby
-function getPlayersInLobby($inviteCode) {
+function getPlayersInLobby($game_id) {
     global $pdo;
 
     try {
 
         // Retrieve players in the lobby
-        $query = "SELECT player FROM players WHERE game_id = :inviteCode";
+        $query = "SELECT player FROM players WHERE game_id = :game_id";
         $stmt = $pdo->prepare($query);
-        $stmt->bindParam(':inviteCode', $inviteCode, PDO::PARAM_STR);
+        $stmt->bindParam(':game_id', $game_id, PDO::PARAM_STR);
         $stmt->execute();
 
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -237,7 +241,7 @@ function isGameStarted($game_id, $player){
 }
 
 
-$playersInLobby = getPlayersInLobby($inviteCode);
+$playersInLobby = getPlayersInLobby($game_id);
 
 
 ?>
@@ -247,24 +251,36 @@ $playersInLobby = getPlayersInLobby($inviteCode);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/lobby.css">
     <title>Lobbi</title>
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 </head>
 <body>
-    <h3>Bejelentkezve mint: <?php echo $user_id?></h3>
-    <h2>Lobbi létrehozója: <?php echo getLeader()?></h2>
+    <p>Bejelentkezve mint: <label id="username"><?php echo $user_id?></label></p>
+    <h2>Lobbi létrehozója: <label id="leader"><?php echo getLeader()?></label></h2>
 
-    <p>Invitációs kód: <?php echo $inviteCode; ?></p>
+    <p>A játék kódja: <label id="game_id"><?php echo $game_id?></label></p>
 
     <!-- Players List -->
     <h3>A lobbiban lévő játékosok</h3>
     <ul id="playersList">
-        <?php foreach ($playersInLobby as $player) : ?>
-            <li><?php echo $player; ?></li>
-        <?php endforeach; ?>
+        
     </ul>
+    <label for="numPlayers">Játékosok száma (min 5 - max 10): <label id="size"></label></label>
+    <div class="column">
+        <h3>Chat</h3>
+    <div id="chatbox"></div>
+                
+        <form method="post" action="" id="messageForm">
+            <input type="text" id="message" name="message" placeholder="Írj egy üzenetet" required>
+            <button type="submit" name="action" value="chat">Küldés</button>
+        </form>
+      
+      
+    </div>
+    </div>
 
-    <label for="numPlayers">Játékosok száma (min 5 - max 10): <?php echo sizeof($playersInLobby); ?></label>
+    
     <form method="post" action="" <?php if (getLeader() != $user_id) echo 'hidden';?>>
         <!-- Settings Form -->
         <h3>Beállítások</h3>
@@ -284,18 +300,24 @@ $playersInLobby = getPlayersInLobby($inviteCode);
         <br><br>
         
         <button type="submit" name="action" value="start_game">Játék indítása</button>
+        <p class="error"><?php echo $error?> </p>
         
     </form>
+    <footer>
+        <div class="button-container">
+    
             <form method="post" action="">
-
+    
                 <button type="submit" name="action" value="main_menu">Főmenü</button>
             </form>
         <form action="logout.php" method="post">
             <button type="submit">Kijelentkezés</button>
         </form>
+        </div>
+    </footer>
         
     
-
+    <script src="lobby.js"></script>
     <script>
         
         //https://www.sitepoint.com/quick-tip-persist-checkbox-checked-state-after-page-reload/
@@ -317,7 +339,7 @@ $playersInLobby = getPlayersInLobby($inviteCode);
                 window.location.href = window.location.href;
             }, 5000); 
         }
-        refreshPage();
+        //refreshPage();
     </script>
 </body>
 </html>
